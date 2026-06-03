@@ -46,6 +46,27 @@
     setTimeout(() => el.remove(), ms);
   }
 
+  /* ----- バラ残数を必ず正しい整数 0〜100 に正規化 -----
+     NaN / null / 負値 / 範囲外が内部状態や表示に固定されるのを防ぐ
+     (項目6: マイナス値・NaN のまま固定される不具合の根本対策)。 */
+  function clampRoses(n) {
+    n = Number(n);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+
+  /* ----- 自分の最新バラ残数を DB から取得 (確定値) ----- */
+  async function fetchMyRoses() {
+    if (!state.lineUserId) return null;
+    const { data, error } = await sb
+      .from("users")
+      .select("total_roses")
+      .eq("line_user_id", state.lineUserId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data.total_roses;
+  }
+
   /* ----------------------- LIFF 初期化 ----------------------- */
   async function initLineUser() {
     if (cfg.LIFF_ID && window.liff) {
@@ -86,19 +107,87 @@
     return data;
   }
 
+  /* ----------------------- ローカルの回答済みフラグ全消去 ----------------------- */
+  // リセット(初期化)で再エントリーが必要になった際に、前回ゲームの
+  // sessionStorage 回答フラグ (pr_answer_*) が残って submitted 画面に
+  // 張り付くのを防ぐ。
+  function clearPersistedAnswers() {
+    const keys = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith("pr_answer_")) keys.push(k);
+    }
+    keys.forEach((k) => sessionStorage.removeItem(k));
+  }
+
+  /* ----------------------- ユーザー情報をDBと再同期 ----------------------- */
+  // ステータス同期のたびに users.total_roses(バラ残数)・登録状況を
+  // DBの最新値へ揃える。これにより:
+  //   - #theme-roses / #waiting-roses が常に最新のDB値を表示する (初期値100固定の解消)
+  //   - リセットでユーザー行が物理削除された場合に検知してローカル状態をクリアし、
+  //     ペア名入力画面(screen-entry)へ戻れるようにする。
+  async function refreshUser() {
+    if (!state.lineUserId) return;
+    const { data, error } = await sb
+      .from("users")
+      .select("pair_name, total_roses")
+      .eq("line_user_id", state.lineUserId)
+      .maybeSingle();
+    if (error) {
+      console.warn("[users] refresh error", error);
+      return;
+    }
+    if (!data) {
+      // リセット(初期化)等でユーザーが削除された → 再エントリー待ちへ戻す
+      state.pairName        = null;
+      state.totalRoses      = 100;
+      state.submittedQId    = null;
+      state.myAnswer        = null;
+      state.answerPlayedQId = null;
+      state.rosesBeforeReveal = null;
+      clearPersistedAnswers();
+      return;
+    }
+    state.pairName   = data.pair_name;
+    state.totalRoses = data.total_roses;
+  }
+
   /* ----------------------- エントリー ----------------------- */
+  const PAIR_NAME_MAX = 8;
   function setupEntryScreen() {
     const input = $("#pair-name");
     const btn = $("#btn-entry");
+    const warn = $("#pair-name-warn");
+    const showWarn = () => { if (warn) warn.classList.remove("hidden"); };
+    const hideWarn = () => { if (warn) warn.classList.add("hidden"); };
 
     input.addEventListener("input", () => {
+      // ペースト/IME確定などで上限超過したら物理的に切り詰める
+      if (input.value.length > PAIR_NAME_MAX) {
+        input.value = input.value.slice(0, PAIR_NAME_MAX);
+      }
+      // 上限到達/超過時はリアルタイムに警告、未満なら隠す
+      if (input.value.length >= PAIR_NAME_MAX) showWarn(); else hideWarn();
       btn.disabled = input.value.trim().length === 0;
+    });
+    // maxlength で弾かれる「9文字目」の入力試行にも気づけるよう警告
+    input.addEventListener("keydown", (e) => {
+      const isChar = e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+      if (isChar && input.value.length >= PAIR_NAME_MAX &&
+          input.selectionStart === input.selectionEnd) {
+        showWarn();
+      }
     });
     btn.disabled = true;
 
     btn.addEventListener("click", async () => {
       const name = input.value.trim();
       if (!name) return;
+      // 送信時バリデーション (フロント側の最終チェック)
+      if (name.length > PAIR_NAME_MAX) {
+        showWarn();
+        return;
+      }
       btn.disabled = true;
       const { data, error } = await sb.rpc("register_user", {
         p_line_user_id: state.lineUserId,
@@ -106,12 +195,18 @@
       });
       if (error) {
         console.error("[register_user]", error);
-        toast("エントリーに失敗しました。再試行してください。");
+        // バックエンドの文字数オーバーエラーは専用メッセージで案内
+        if (error.message && error.message.includes("pair_name_too_long")) {
+          showWarn();
+          toast("ペア名は8文字以内で入力してください。");
+        } else {
+          toast("エントリーに失敗しました。再試行してください。");
+        }
         btn.disabled = false;
         return;
       }
       state.pairName   = data.pair_name;
-      state.totalRoses = data.total_roses;
+      state.totalRoses = clampRoses(data.total_roses);
       reflectGameStatus();
     });
   }
@@ -206,7 +301,14 @@
     state.currentDisplayOrder = gs.current_display_order;
     state.revealedCorrect = gs.revealed_correct_value;
 
-    // ユーザー未登録 → entry 画面のまま
+    // バラ残数・登録状況を毎回DBと同期し、常に最新値を表示する。
+    // ※ answer 中は搾取アニメ(rosesBeforeReveal 起点)を壊さないため同期しない。
+    //   answer の最終残数は runAnswerSequence 内で算出・表示する。
+    if (gs.status !== "answer") {
+      await refreshUser();
+    }
+
+    // ユーザー未登録 (未エントリー / リセットで削除) → ペア名入力画面へ
     if (!state.pairName) { showScreen("screen-entry"); return; }
 
     if (gs.status === "entry") {
@@ -217,7 +319,18 @@
     }
     if (gs.status === "theme") {
       await loadCurrentQuestion();
-      $("#theme-roses").textContent = state.totalRoses;
+      // ---- 前問/練習問題の演出残りを完全に解消し、本来の残数へ確実にリセット ----
+      // refreshUser() で state.totalRoses は既に DB の確定値へ同期済み
+      // (練習問題は DB 不変=本来値。本番初問なら 100)。
+      // 暗黙の同期に頼らず、ここで内部状態・残数バッジ・残数カードを明示的に揃える。
+      clearAnswerTimers();
+      state.answerPlayedQId = null;
+      state.totalRoses = clampRoses(state.totalRoses);
+      $("#theme-roses").textContent = state.totalRoses;      // 本来の残数 (初問なら100)
+      resetRoseCardDisplay(state.totalRoses);                 // 残数カードの演出残りを消去
+      // 没収演出の起点(before)も theme 時点の本来値で確定。answer 到達後の
+      // Realtime イベント順に左右されない安定した没収前残数になる (項目6)。
+      state.rosesBeforeReveal = state.totalRoses;
       // 復元: 回答済みなら submitted 画面
       const saved = restoreAnswer(state.currentQId);
       if (saved) {
@@ -275,13 +388,24 @@
   function showStep(el)  { el.classList.remove("hidden"); void el.offsetWidth; el.classList.add("in"); }
   function hideStep(el)  { el.classList.add("hidden"); el.classList.remove("in"); }
 
+  /* ----- 残数カード(#rose-card-num)の表示を本来値へ即リセット -----
+     練習問題のデモ等で減った表示残りを、次問題の theme 遷移時に確実に消す。 */
+  function resetRoseCardDisplay(n) {
+    const numEl = $("#rose-card-num");
+    if (!numEl) return;
+    n = clampRoses(n);
+    numEl.classList.toggle("zero", n === 0);
+    numEl.innerHTML = `${n}<span class="unit">本</span>`;
+  }
+
   /* ----- バラ残数カードの初期状態 (搾取前) を組み立てる ----- */
   function prepareRoseCard(before) {
+    before = clampRoses(before);
     const numEl = $("#rose-card-num");
     const labelEl = $("#rose-card-label");
     const bouquet = $("#rose-bouquet");
     const captionEl = $("#rose-card-caption");
-    numEl.classList.remove("zero");
+    numEl.classList.toggle("zero", before === 0);
     labelEl.textContent = "残りのバラ";
     labelEl.style.whiteSpace = "";
     numEl.innerHTML = `${before}<span class="unit">本</span>`;
@@ -293,6 +417,7 @@
 
   /* ----- バラ残数カードの最終状態 (搾取後) を反映 ----- */
   function finalizeRoseCard(after, didConfiscate) {
+    after = clampRoses(after);
     const numEl = $("#rose-card-num");
     const labelEl = $("#rose-card-label");
     const bouquet = $("#rose-bouquet");
@@ -301,7 +426,8 @@
     bouquet.src = bouquetFor(after);
     if (after === 0) {
       numEl.classList.add("zero");
-      numEl.innerHTML = "0";
+      // 項目3: 0 のときも単位「本」を必ず付ける (他の残数表示と統一)
+      numEl.innerHTML = `0<span class="unit">本</span>`;
       labelEl.textContent = "全部のバラがおじさんに\n没収されました…💐";
       labelEl.style.whiteSpace = "pre-line";
       captionEl.textContent = "バラは0本だけど\n引き続きゲームはエンジョイできます！\n次の画面まで少々お待ちください…";
@@ -314,7 +440,7 @@
       captionEl.textContent = "次の画面まで少々お待ちください…";
       captionEl.style.whiteSpace = "";
     }
-    if (didConfiscate) fireConfiscateStamp();
+    if (didConfiscate) fireConfiscateShake();
   }
 
   /* ----- 数値のロールダウン (requestAnimationFrame) ----- */
@@ -370,14 +496,8 @@
     }
   }
 
-  /* ----- 没収スタンプ押印 + 画面シェイク ----- */
-  function fireConfiscateStamp() {
-    const stamp = $("#confiscate-stamp");
-    if (stamp) {
-      stamp.classList.remove("show");
-      void stamp.offsetWidth; // アニメ再起動
-      stamp.classList.add("show");
-    }
+  /* ----- 搾取の瞬間の画面シェイク ----- */
+  function fireConfiscateShake() {
     const stage = $("#stage");
     if (stage) {
       stage.classList.remove("shake");
@@ -460,11 +580,31 @@
         deviation === 0 ? "ピタリ賞！今回は没収なしだよ。" : "誤差の分だけ没収するよーん。";
     }
 
-    // 開始時の総バラ数を記憶 (アニメ起点)
-    if (state.rosesBeforeReveal == null) state.rosesBeforeReveal = state.totalRoses;
-    const before = state.rosesBeforeReveal;
-    // 本番想定の残数 (テストでも演出上は引く)
-    const simulatedAfter = unanswered ? 0 : Math.max(0, before - deviation);
+    // --- 残数の確定 (項目6: 表示・内部状態・DB を完全一致させる) ---
+    // before = この問題に入った時点の残数 (theme で確定済み・没収前)。
+    //   Realtime の users / game_status イベントの到着順に依存しないよう、
+    //   answer 到達後の state.totalRoses ではなく theme 時に確定した値を起点にする。
+    //   (users イベントが先着して state.totalRoses が没収後値に化けても影響しない)
+    const isTest = (state.currentDisplayOrder === 0);
+    let before = clampRoses(state.rosesBeforeReveal != null ? state.rosesBeforeReveal : state.totalRoses);
+
+    // 「画面に出す着地点 finalRoses (演出用)」と「内部状態 state.totalRoses (本来値)」を明確に分離する。
+    // 内部状態は常に DB の確定値へ同期し、デモの減少値を state に絶対に残さない。
+    //   本番(display_order>=1): DB は誤差分を減算済み → 表示も内部状態も DB 値で一致。
+    //   練習(display_order=0)  : DB は減算しない(=100のまま) → 内部状態は DB 値(本来値)へ同期し、
+    //                            画面だけ誤差分を引いた "デモ表示" にする (項目: テスト独立)。
+    const dbRoses = await fetchMyRoses();
+    if (dbRoses != null) state.totalRoses = clampRoses(dbRoses); // 内部状態 = DB の本来値へ同期
+
+    let finalRoses;
+    if (isTest) {
+      // 練習: 画面表示のみ減らすデモ。state.totalRoses は上で DB 値(=100想定)に同期済み。
+      finalRoses = unanswered ? 0 : clampRoses(before - deviation);
+    } else {
+      // 本番: DB 確定値を着地点に。before は没収前なので必ず finalRoses 以上。
+      finalRoses = (dbRoses != null) ? clampRoses(dbRoses) : clampRoses(before - deviation);
+      if (before < finalRoses) before = finalRoses;
+    }
 
     const ojisan = $("#phase-ojisan");
     const roseCard = $("#phase-roses");
@@ -476,7 +616,7 @@
       showStep(ojisan);
       showStep(roseCard);
       prepareRoseCard(before);
-      finalizeRoseCard(simulatedAfter, false);
+      finalizeRoseCard(finalRoses, false);
       return;
     }
     state.answerPlayedQId = state.currentQId;
@@ -484,7 +624,6 @@
     // --- 第1段階: 正解見出し＋正解カードのみ。おじさん／バラは伏せる ---
     hideStep(ojisan);
     hideStep(roseCard);
-    $("#confiscate-stamp").classList.remove("show");
     prepareRoseCard(before);
 
     // --- 第2段階: おじさん登場 (約1.2秒後) ---
@@ -494,7 +633,7 @@
     state.answerTimers.push(setTimeout(() => {
       showStep(roseCard);
       // カード登場アニメ後に搾取開始
-      state.answerTimers.push(setTimeout(() => startConfiscation(before, simulatedAfter), 550));
+      state.answerTimers.push(setTimeout(() => startConfiscation(before, finalRoses), 550));
     }, 2400));
   }
 
@@ -509,17 +648,22 @@
       toast("結果取得に失敗しました");
       return;
     }
-    const clearedSorted = users.filter((u) => u.total_roses > 0);
+    // 残数を正規化 (NaN/負値/範囲外を 0〜100 の整数へ) してから判定・整列。
+    // これにより「0本(脱落)」を確実に除外し、不正値で生き残ったと誤認されるのを防ぐ。
+    const normalized = users.map((u) => ({ ...u, roses: clampRoses(u.total_roses) }));
+    const clearedSorted = normalized
+      .filter((u) => u.roses > 0)
+      .sort((a, b) => b.roses - a.roses);
 
-    const me = users.find((u) => u.line_user_id === state.lineUserId);
+    const me = normalized.find((u) => u.line_user_id === state.lineUserId);
     const myRank = clearedSorted.findIndex((u) => u.line_user_id === state.lineUserId);
 
     const summary = $("#result-summary");
-    if (me && me.total_roses > 0) {
+    if (me && me.roses > 0) {
       summary.innerHTML = `
         <div class="lbl">あなたのペアは</div>
         <div class="rank-num">${myRank + 1}<span class="pos">位</span></div>
-        <div class="rose-num">バラ${me.total_roses}本</div>
+        <div class="rose-num">バラ${me.roses}本</div>
       `;
     } else {
       summary.innerHTML = `
@@ -544,7 +688,7 @@
               <span class="rank ${goldClass}">${pos}<span class="pos">位</span></span>
               <span class="pair-name">${escapedName}</span>
             </div>
-            <div class="roses"><span class="lbl">バラ</span>${u.total_roses}</div>
+            <div class="roses"><span class="lbl">バラ</span>${u.roses}</div>
           </div>
         `;
       }).join("");
@@ -587,7 +731,7 @@
         { event: "UPDATE", schema: "public", table: "users",
           filter: `line_user_id=eq.${state.lineUserId}` },
         (payload) => {
-          state.totalRoses = payload.new.total_roses;
+          state.totalRoses = clampRoses(payload.new.total_roses);
           $("#waiting-roses").textContent = state.totalRoses;
           $("#theme-roses").textContent = state.totalRoses;
         })

@@ -22,6 +22,7 @@
         <label class="field-label" for="pair-name">あなたのペア名</label>
         <input id="pair-name" class="text-input" type="text" maxlength="8" placeholder="例）IC代表" autocomplete="off" />
         <span class="helper">8文字以内</span>
+        <span class="field-warn hidden" id="pair-name-warn">上限は8文字以内です</span>
         <button id="btn-entry" class="btn-primary">エントリーして待機する</button>
         <span class="note">※ ペアの代表者1名がこの画面を操作してください。</span>
       </div>
@@ -79,7 +80,6 @@
       <div class="ojisan-stage reveal-step hidden" id="phase-ojisan">
         <div class="bubble" id="answer-bubble">誤差の分だけ没収するよーん。</div>
         <img class="ojisan-img" src="./images/ojisan_take.png" alt="お花没収おじさん" />
-        <div class="confiscate-stamp" id="confiscate-stamp">没収</div>
       </div>
 
       <!-- Phase: バラ残数カード（画面を切り替えず被せて表示） -->

@@ -44,7 +44,7 @@ COMMENT ON COLUMN public.questions.display_order
 -- ---- ③ users (ペア・残高) ------------------------------------------
 CREATE TABLE public.users (
   line_user_id  text        PRIMARY KEY,
-  pair_name     text        NOT NULL CHECK (length(trim(pair_name)) > 0),
+  pair_name     text        NOT NULL CHECK (char_length(trim(pair_name)) BETWEEN 1 AND 8),
   total_roses   int         NOT NULL DEFAULT 100
                             CHECK (total_roses BETWEEN 0 AND 100),
   created_at    timestamptz NOT NULL DEFAULT now()

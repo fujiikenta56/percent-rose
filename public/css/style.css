@@ -30,8 +30,9 @@ body {
   color: var(--text);
   background: var(--bg);
   min-height: 100vh;
-  overflow-x: hidden; /* 没収スタンプ／シェイク演出時の横はみ出し対策 */
+  overflow-x: hidden; /* シェイク演出時の横はみ出し対策 */
   -webkit-font-smoothing: antialiased;
+  font-size: 17px; /* 視認性向上のためベースフォントを拡大 (項目4) */
 }
 
 .stage {
@@ -63,7 +64,7 @@ body {
 
 .lead {
   text-align: center;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.7;
   margin: 16px 0 24px;
   color: var(--text);
@@ -80,7 +81,7 @@ body {
   display: block;
   color: var(--primary);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 15px;
   margin-bottom: 10px;
 }
 .text-input {
@@ -100,14 +101,23 @@ body {
 .helper {
   display: block;
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
+  margin-top: 6px;
+}
+/* ペア名の文字数オーバー警告 (項目1) */
+.field-warn {
+  display: block;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #C0203B;
   margin-top: 6px;
 }
 .note {
   display: block;
   text-align: center;
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--text-muted);
   margin-top: 14px;
   line-height: 1.6;
@@ -121,7 +131,7 @@ body {
   background: linear-gradient(180deg, var(--primary) 0%, var(--primary-d) 100%);
   color: #fff;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 18px;
   border-radius: 10px;
   box-shadow: 0 4px 0 rgba(0,0,0,0.08), 0 6px 14px rgba(164,25,47,0.25);
   transition: transform 0.05s;
@@ -142,7 +152,7 @@ body {
 /* ---- エントリー完了 ---- */
 .entry-done { text-align: center; }
 .entry-done .pair {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   margin-bottom: 18px;
 }
@@ -151,19 +161,21 @@ body {
   align-items: baseline;
   justify-content: center;
   gap: 4px;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text);
 }
 .entry-done .roses-row .num {
   font-family: "Cinzel", serif;
   font-weight: 700;
   font-size: 56px;
-  color: var(--text);
+  color: #C0203B; /* 項目2: バラ残数を濃いバラ色で装飾 */
   line-height: 1;
 }
+/* 念のため ID 直指定でも固定し、状態更新による色の上書きを防ぐ */
+#waiting-roses { color: #C0203B; }
 .entry-done .wait-msg {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   margin-top: 4px;
 }
 
@@ -174,13 +186,13 @@ body {
   font-family: "Cinzel", serif;
   font-weight: 700;
   color: var(--primary);
-  font-size: 18px;
+  font-size: 20px;
 }
 .q-label {
   display: block;
   text-align: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--primary);
   margin: 36px 0 12px;
   letter-spacing: 0.04em;
@@ -189,7 +201,7 @@ body {
   background: var(--bg-card);
   border-radius: 16px;
   padding: 20px 18px;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.7;
   text-align: center;
   box-shadow: 0 2px 10px rgba(73,41,28,0.05);
@@ -251,10 +263,11 @@ body {
 .submit-btn {
   display: inline-block;
   margin-top: 28px;
-  padding: 14px 36px;
+  padding: 15px 38px;
   background: linear-gradient(180deg, var(--primary) 0%, var(--primary-d) 100%);
   color: #fff;
   font-weight: 700;
+  font-size: 18px;
   border-radius: 10px;
   box-shadow: 0 4px 0 rgba(0,0,0,0.08), 0 6px 14px rgba(164,25,47,0.25);
 }
@@ -265,17 +278,17 @@ body {
   color: var(--primary);
   font-weight: 700;
   margin-bottom: 16px;
-  font-size: 13px;
+  font-size: 15px;
 }
-.submitted-card .sent { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
-.submitted-card .wait { color: var(--text-muted); font-size: 13px; }
+.submitted-card .sent { font-weight: 700; font-size: 18px; margin-bottom: 6px; }
+.submitted-card .wait { color: var(--text-muted); font-size: 15px; }
 
 /* ---- 正解発表 ---- */
 .reveal-heading {
   text-align: center;
   color: var(--primary);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 16px;
   margin: 8px 0 12px;
 }
 .reveal-card { text-align: center; }
@@ -287,7 +300,7 @@ body {
   letter-spacing: -0.02em;
 }
 .reveal-card .correct .pct { font-size: 22px; }
-.reveal-card .your { margin-top: 4px; font-size: 14px; color: var(--text); }
+.reveal-card .your { margin-top: 4px; font-size: 16px; color: var(--text); }
 .reveal-card .your.unanswered { color: var(--text-muted); }
 .dev-chip {
   display: inline-block;
@@ -297,7 +310,7 @@ body {
   background: #F4DEDB;
   color: var(--primary);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .ojisan-stage {
@@ -310,8 +323,8 @@ body {
   display: inline-block;
   background: #fff;
   border-radius: 14px;
-  padding: 8px 14px;
-  font-size: 12px;
+  padding: 9px 15px;
+  font-size: 14px;
   color: var(--text);
   box-shadow: 0 2px 6px rgba(73,41,28,0.08);
   margin-bottom: 8px;
@@ -331,7 +344,7 @@ body {
   text-align: center;
   box-shadow: 0 2px 10px rgba(73,41,28,0.05);
 }
-.rose-card .label { font-size: 12px; color: var(--primary); font-weight: 700; }
+.rose-card .label { font-size: 14px; color: var(--primary); font-weight: 700; }
 .rose-card .num {
   font-family: "Cinzel", serif;
   font-weight: 700;
@@ -341,14 +354,14 @@ body {
   margin: 4px 0 8px;
 }
 .rose-card .num.zero { color: var(--primary); }
-.rose-card .unit { font-size: 14px; color: var(--text); margin-left: 4px; font-weight: 700; }
+.rose-card .unit { font-size: 17px; color: var(--text); margin-left: 4px; font-weight: 700; }
 .rose-card img.bouquet {
   width: 55%;
   max-width: 200px;
   display: block;
   margin: 6px auto 10px;
 }
-.rose-card .caption { font-size: 13px; color: var(--text); line-height: 1.7; }
+.rose-card .caption { font-size: 15px; color: var(--text); line-height: 1.7; }
 .rose-card .caption.muted { color: var(--text-muted); }
 
 /* =====================================================================
@@ -401,36 +414,7 @@ body {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .2));
 }
 
-/* 没収スタンプ（ドンッと押印） */
-.confiscate-stamp {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(2.8) rotate(-14deg);
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Yu Mincho UI", serif;
-  font-weight: 700;
-  font-size: 60px;
-  letter-spacing: 0.08em;
-  color: var(--primary);
-  border: 5px solid var(--primary);
-  border-radius: 12px;
-  padding: 4px 16px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 0 0 3px rgba(164, 25, 47, .18), 0 6px 20px rgba(139, 15, 35, .25);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1300;
-  white-space: nowrap;
-}
-.confiscate-stamp.show { animation: stampSlam .5s cubic-bezier(.2, .7, .2, 1) forwards; }
-@keyframes stampSlam {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(2.8) rotate(-14deg); }
-  55%  { opacity: 1; transform: translate(-50%, -50%) scale(.9)  rotate(-14deg); }
-  72%  { opacity: 1; transform: translate(-50%, -50%) scale(1.06) rotate(-14deg); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1)   rotate(-14deg); }
-}
-
-/* 押印の瞬間の画面シェイク */
+/* 搾取の瞬間の画面シェイク */
 .stage.shake { animation: stageShake .5s cubic-bezier(.36, .07, .19, .97); }
 @keyframes stageShake {
   10%, 90%        { transform: translateX(-2px); }
@@ -450,7 +434,7 @@ body {
   margin-bottom: 10px;
 }
 .result-summary { text-align: center; margin-bottom: 22px; }
-.result-summary .lbl { font-size: 12px; color: var(--text); }
+.result-summary .lbl { font-size: 14px; color: var(--text); }
 .result-summary .rank-num {
   font-family: "Cinzel", serif;
   color: var(--gold);
@@ -466,7 +450,7 @@ body {
   font-size: 26px;
   margin-top: 4px;
 }
-.result-summary .lose { font-size: 12px; color: var(--text-muted); }
+.result-summary .lose { font-size: 14px; color: var(--text-muted); }
 
 .ranking-list { display: flex; flex-direction: column; gap: 10px; }
 .ranking-list .empty {
@@ -492,7 +476,7 @@ body {
 }
 .rank-item .rank.gold { color: var(--gold); }
 .rank-item .rank .pos { font-size: 11px; color: inherit; margin-left: 1px; }
-.rank-item .pair-name { font-weight: 700; font-size: 14px; color: var(--text); }
+.rank-item .pair-name { font-weight: 700; font-size: 16px; color: var(--text); }
 .rank-item .roses {
   font-family: "Cinzel", serif;
   font-weight: 700;
@@ -507,7 +491,7 @@ body {
 .ranking-section-label {
   color: var(--primary);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
   margin: 4px 0 10px;
 }
 
@@ -520,21 +504,26 @@ body.admin { background: #FAF6F0; }
   padding: 24px 20px 40px;
 }
 .admin-stage .admin-title {
-  font-size: 14px; font-weight: 700;
+  font-size: 16px; font-weight: 700;
   color: var(--text); margin-bottom: 14px;
 }
 .admin-panel {
   background: var(--admin-bg);
   color: var(--admin-text);
   border-radius: 16px;
-  padding: 30px 18px 80px;
+  padding: 30px 18px 88px;
   min-height: calc(100vh - 110px);
   display: flex;
   flex-direction: column;
+  /* 項目5: 操作内容を上下バランスよく少し中央寄りに配置 */
+  justify-content: center;
+  align-items: center;
   position: relative;
 }
+/* 各フェーズのビューは横幅いっぱいに使い、中身は中央寄せ */
+.admin-view { width: 100%; }
 .admin-status {
-  text-align: center; font-size: 14px;
+  text-align: center; font-size: 15px;
   margin-bottom: 14px; opacity: 0.85;
 }
 .admin-q-card {
@@ -542,43 +531,43 @@ body.admin { background: #FAF6F0; }
   border-radius: 14px;
   padding: 18px 16px;
   text-align: center;
-  font-size: 15px; line-height: 1.6;
+  font-size: 17px; line-height: 1.6;
   margin: 0 6px 24px;
 }
 .admin-q-label {
   text-align: center;
-  font-weight: 700; font-size: 14px;
+  font-weight: 700; font-size: 16px;
   margin-bottom: 12px;
 }
 .admin-correct-block { text-align: center; margin-bottom: 24px; }
-.admin-correct-block .lbl { font-size: 14px; margin-bottom: 6px; opacity: 0.9; }
+.admin-correct-block .lbl { font-size: 15px; margin-bottom: 6px; opacity: 0.9; }
 .admin-correct-block .val {
-  font-weight: 700; font-size: 44px; letter-spacing: -0.01em;
+  font-weight: 700; font-size: 48px; letter-spacing: -0.01em;
 }
 .admin-btn {
   display: block;
   margin: 0 auto;
-  padding: 14px 32px;
+  padding: 16px 34px;
   background: linear-gradient(180deg, var(--primary) 0%, var(--primary-d) 100%);
   color: #fff;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 17px;
   border-radius: 10px;
   box-shadow: 0 4px 0 rgba(0,0,0,0.20), 0 6px 14px rgba(0,0,0,0.30);
-  min-width: 180px;
+  min-width: 190px;
 }
 .admin-btn:disabled { background: #6B5550; box-shadow: none; cursor: not-allowed; }
 
 .admin-reset {
   position: absolute;
   bottom: 16px; left: 16px; right: 16px;
-  padding: 13px;
+  padding: 14px;
   border: 1px solid #fff;
   background: transparent;
   color: #fff;
   border-radius: 12px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .admin-ranking { flex: 1; margin-top: 8px; }
@@ -593,9 +582,9 @@ body.admin { background: #FAF6F0; }
   position: fixed; left: 50%;
   bottom: 30px; transform: translateX(-50%);
   background: #2D1A18; color: #fff;
-  padding: 12px 18px;
+  padding: 13px 20px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   z-index: 1000;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
   animation: toastIn 0.2s ease-out;
@@ -620,8 +609,8 @@ body.admin { background: #FAF6F0; }
   color: var(--text);
   text-align: center;
 }
-.modal-box .msg { font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
+.modal-box .msg { font-size: 15px; line-height: 1.7; margin-bottom: 16px; }
 .modal-box .actions { display: flex; gap: 10px; }
-.modal-box .actions button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+.modal-box .actions button { flex: 1; padding: 13px; border-radius: 8px; font-weight: 700; font-size: 15px; }
 .modal-box .ok { background: var(--primary); color: #fff; }
 .modal-box .cancel { background: #EBDBC4; color: var(--text); }

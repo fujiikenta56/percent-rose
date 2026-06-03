@@ -31,6 +31,10 @@ BEGIN
   IF v_name = '' THEN
     RAISE EXCEPTION 'pair_name is required' USING ERRCODE = '22023';
   END IF;
+  -- 項目1: ペア名は8文字以内 (フロントと整合。char_length で多バイト対応)
+  IF char_length(v_name) > 8 THEN
+    RAISE EXCEPTION 'pair_name_too_long' USING ERRCODE = '22023';
+  END IF;
   IF p_line_user_id IS NULL OR length(p_line_user_id) = 0 THEN
     RAISE EXCEPTION 'line_user_id is required' USING ERRCODE = '22023';
   END IF;
@@ -250,8 +254,12 @@ AS $$
 DECLARE
   v_row public.game_status;
 BEGIN
-  DELETE FROM public.answers_log;
-  DELETE FROM public.users;
+  -- Supabase の safe-update ガードは WHERE 句なしの DELETE を拒否する
+  -- (ERROR 21000 "DELETE requires a WHERE clause") ため、全件削除でも
+  -- WHERE true を明示する。answers_log は users への FK (ON DELETE CASCADE)
+  -- を持つので、先に answers_log を消してから users を消す。
+  DELETE FROM public.answers_log WHERE true;
+  DELETE FROM public.users        WHERE true;
 
   UPDATE public.game_status
      SET status                 = 'entry',

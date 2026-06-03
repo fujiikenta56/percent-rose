@@ -16,6 +16,13 @@
 
   const $ = (sel) => document.querySelector(sel);
 
+  /* バラ残数を 0〜100 の整数へ正規化 (NaN/負値/範囲外を排除) */
+  function clampRoses(n) {
+    n = Number(n);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+
   /* ----------------------- Toast / Modal ----------------------- */
   function toast(msg, ms = 2400) {
     const holder = $("#toast-holder");
@@ -127,7 +134,11 @@
       .from("users")
       .select("line_user_id, pair_name, total_roses")
       .order("total_roses", { ascending: false });
-    const cleared = (data || []).filter((u) => u.total_roses > 0);
+    // 残数を正規化 (NaN/負値/範囲外→0〜100) し、0本(脱落)を確実に除外・整列
+    const normalized = (data || []).map((u) => ({ ...u, roses: clampRoses(u.total_roses) }));
+    const cleared = normalized
+      .filter((u) => u.roses > 0)
+      .sort((a, b) => b.roses - a.roses);
     const list = $("#admin-ranking-list");
     if (cleared.length === 0) {
       list.innerHTML = `<div class="empty" style="color:#fff;opacity:0.8;">達成者はいませんでした…</div>`;
@@ -142,7 +153,7 @@
             <span class="rank ${goldClass}">${pos}<span class="pos">位</span></span>
             <span class="pair-name">${escapeHtml(u.pair_name)}</span>
           </div>
-          <div class="roses"><span class="lbl">バラ</span>${u.total_roses}</div>
+          <div class="roses"><span class="lbl">バラ</span>${u.roses}</div>
         </div>`;
     }).join("");
   }
