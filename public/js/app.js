@@ -745,6 +745,13 @@
   }
 
   async function bootstrap() {
+    // Supabase クライアント未生成（config.js 未読込など）なら、後続の sb 呼び出しで
+    // 例外になり画面が固まる。原因を可視化して早期 return する。
+    if (!sb) {
+      toast("Supabase に接続できません。config.js の読み込み（404）を確認してください。", 8000);
+      return;
+    }
+
     setupEntryScreen();
     setupThemeScreen();
 

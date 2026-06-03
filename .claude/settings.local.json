@@ -8,7 +8,8 @@
       "Bash(node --check \"public/js/app.js\")",
       "Bash(node --check public/js/app.js)",
       "Bash(node --check public/js/admin.js)",
-      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('public/css/style.css','utf8'\\);const o=\\(c.match\\(/{/g\\)||[]\\).length,cl=\\(c.match\\(/}/g\\)||[]\\).length;console.log\\('open',o,'close',cl, o===cl?'BALANCED':'MISMATCH'\\)\")"
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('public/css/style.css','utf8'\\);const o=\\(c.match\\(/{/g\\)||[]\\).length,cl=\\(c.match\\(/}/g\\)||[]\\).length;console.log\\('open',o,'close',cl, o===cl?'BALANCED':'MISMATCH'\\)\")",
+      "Bash(git add *)"
     ]
   }
 }

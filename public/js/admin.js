@@ -237,16 +237,30 @@
 
   /* ----------------------- 起動 ----------------------- */
   async function bootstrap() {
+    // Supabase クライアント未生成（config.js 未読込など）の場合は、
+    // ここで処理を止めると全 admin-view が hidden のまま=真っ白になるため、
+    // 原因を画面に出して早期に知らせる。
+    if (!sb) {
+      toast("Supabase に接続できません。config.js の読み込み（404）を確認してください。", 8000);
+      return;
+    }
+
     $("#btn-start").onclick  = onStart;
     $("#btn-reveal").onclick = onReveal;
     $("#btn-next").onclick   = onNext;
     $("#btn-final").onclick  = onFinal;
     $("#btn-reset").onclick  = onReset;
 
-    await loadQuestions();
-    await loadGameStatus();
-    subscribeRealtime();
-    await reflect();
+    try {
+      await loadQuestions();
+      await loadGameStatus();
+      subscribeRealtime();
+      await reflect();
+    } catch (e) {
+      // 1か所の例外で以降の描画が巻き添えで止まらないよう捕捉して可視化する。
+      console.error("[admin] bootstrap failed", e);
+      toast("初期化中にエラーが発生しました。通信状態を確認してください。", 8000);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", bootstrap);
