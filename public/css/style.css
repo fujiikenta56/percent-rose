@@ -1,0 +1,627 @@
+/* =====================================================================
+   パーセント・ローズ 共通スタイル
+   - ユーザー画面 (index.html)
+   - 管理画面 (admin.html)
+   - スマホファースト。最大幅 420px のセンタリングカードレイアウト。
+   ===================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input { font: inherit; }
+
+:root {
+  --bg:          #F6EBDC;
+  --bg-card:    #FFFFFF;
+  --bg-soft:    #FAF1E2;
+  --primary:     #A4192F;
+  --primary-d:  #8B0F23;
+  --gold:       #C9A227;
+  --text:       #3D2A28;
+  --text-muted: #8B7B70;
+  --line:       #EBDBC4;
+
+  --admin-bg:   #4B3B36;
+  --admin-text: #FFFFFF;
+}
+
+body {
+  font-family: "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden; /* 没収スタンプ／シェイク演出時の横はみ出し対策 */
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 28px 20px 40px;
+  position: relative;
+}
+
+.logo {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+  letter-spacing: 0.06em;
+  font-size: 32px;
+  line-height: 1.2;
+}
+.logo .small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--primary);
+  margin-bottom: 6px;
+  font-family: "Hiragino Sans", sans-serif;
+  font-weight: 600;
+}
+
+.lead {
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 16px 0 24px;
+  color: var(--text);
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px 20px;
+  box-shadow: 0 2px 10px rgba(73, 41, 28, 0.05);
+}
+
+.field-label {
+  display: block;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.text-input {
+  width: 100%;
+  padding: 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-soft);
+  font-size: 18px;
+  outline: none;
+  text-align: center;
+  color: var(--text);
+}
+.text-input:focus { border-color: var(--primary); background: #fff; }
+.text-input::placeholder { color: #C8B8A2; }
+
+.helper {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.note {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 14px;
+  line-height: 1.6;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-d) 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.08), 0 6px 14px rgba(164,25,47,0.25);
+  transition: transform 0.05s;
+}
+.btn-primary:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+.btn-primary:disabled { background: #C8B8A2; box-shadow: none; cursor: not-allowed; }
+
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #f0d8d8;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin: 14px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- エントリー完了 ---- */
+.entry-done { text-align: center; }
+.entry-done .pair {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+.entry-done .roses-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--text);
+}
+.entry-done .roses-row .num {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 56px;
+  color: var(--text);
+  line-height: 1;
+}
+.entry-done .wait-msg {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ---- 出題画面 ---- */
+.roses-badge {
+  position: absolute;
+  top: 24px; right: 24px;
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 18px;
+}
+.q-label {
+  display: block;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--primary);
+  margin: 36px 0 12px;
+  letter-spacing: 0.04em;
+}
+.q-text-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 20px 18px;
+  font-size: 15px;
+  line-height: 1.7;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(73,41,28,0.05);
+}
+.q-block { text-align: center; padding-top: 8px; }
+
+.answer-value {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 56px;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 28px;
+}
+.answer-value .pct { font-size: 22px; font-weight: 700; }
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--line);
+  border-radius: 999px;
+  outline: none;
+  margin-top: 12px;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--primary) 0%, var(--primary) var(--val, 50%), var(--line) var(--val, 50%), var(--line) 100%);
+}
+.slider::-moz-range-track { height: 8px; border-radius: 999px; background: var(--line); }
+.slider::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--primary); }
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--primary);
+  margin-top: -7px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.slider::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.scale-row {
+  display: flex; justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px; color: var(--text-muted);
+}
+.submit-btn {
+  display: inline-block;
+  margin-top: 28px;
+  padding: 14px 36px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-d) 100%);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 10px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.08), 0 6px 14px rgba(164,25,47,0.25);
+}
+.submit-btn:disabled { background: #C8B8A2; box-shadow: none; cursor: not-allowed; }
+
+.submitted-card { text-align: center; }
+.submitted-card .heading {
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.submitted-card .sent { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.submitted-card .wait { color: var(--text-muted); font-size: 13px; }
+
+/* ---- 正解発表 ---- */
+.reveal-heading {
+  text-align: center;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+  margin: 8px 0 12px;
+}
+.reveal-card { text-align: center; }
+.reveal-card .correct {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 56px;
+  letter-spacing: -0.02em;
+}
+.reveal-card .correct .pct { font-size: 22px; }
+.reveal-card .your { margin-top: 4px; font-size: 14px; color: var(--text); }
+.reveal-card .your.unanswered { color: var(--text-muted); }
+.dev-chip {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #F4DEDB;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.ojisan-stage {
+  margin-top: 14px;
+  text-align: center;
+  position: relative;
+  min-height: 220px;
+}
+.bubble {
+  display: inline-block;
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(73,41,28,0.08);
+  margin-bottom: 8px;
+}
+.ojisan-img {
+  width: 70%;
+  max-width: 240px;
+  display: block;
+  margin: 0 auto;
+}
+
+.rose-card {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(73,41,28,0.05);
+}
+.rose-card .label { font-size: 12px; color: var(--primary); font-weight: 700; }
+.rose-card .num {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 50px;
+  color: var(--text);
+  line-height: 1;
+  margin: 4px 0 8px;
+}
+.rose-card .num.zero { color: var(--primary); }
+.rose-card .unit { font-size: 14px; color: var(--text); margin-left: 4px; font-weight: 700; }
+.rose-card img.bouquet {
+  width: 55%;
+  max-width: 200px;
+  display: block;
+  margin: 6px auto 10px;
+}
+.rose-card .caption { font-size: 13px; color: var(--text); line-height: 1.7; }
+.rose-card .caption.muted { color: var(--text-muted); }
+
+/* =====================================================================
+   没収フェーズ 演出
+   ===================================================================== */
+
+/* 第1段階: 正解見出し・正解カードの先行登場 */
+.reveal-heading { animation: revealPop .5s ease-out both; }
+.reveal-card    { animation: revealPop .5s ease-out .06s both; }
+@keyframes revealPop {
+  from { opacity: 0; transform: translateY(10px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 第2・3段階: おじさん／バラカードを段階的に登場（同居） */
+.reveal-step {
+  opacity: 0;
+  transform: translateY(28px) scale(.9);
+  transition: opacity .55s ease, transform .55s cubic-bezier(.2, .9, .3, 1.2);
+}
+.reveal-step.in { opacity: 1; transform: none; }
+
+/* おじさん登場ポップ */
+#phase-ojisan.in .ojisan-img { animation: ojisanEnter .6s cubic-bezier(.2, .9, .3, 1.4) both; }
+@keyframes ojisanEnter {
+  0%   { transform: translateY(34px) scale(.55) rotate(-7deg); }
+  60%  { transform: translateY(-6px) scale(1.07) rotate(3deg); }
+  100% { transform: none; }
+}
+
+/* 搾取中: バラが激しく揺れる */
+.bouquet.shaking { animation: roseShake .11s linear infinite; transform-origin: center bottom; }
+@keyframes roseShake {
+  0%   { transform: translate(0, 0) rotate(0); }
+  25%  { transform: translate(-3px, 1px) rotate(-3.5deg); }
+  50%  { transform: translate(3px, -1px) rotate(3.5deg); }
+  75%  { transform: translate(-2px, 1px) rotate(-2deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+
+/* おじさんに吸い取られて飛んでいくバラ粒子 */
+.rose-petal {
+  position: fixed;
+  z-index: 1200;
+  font-size: 22px;
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(0, 0);
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .2));
+}
+
+/* 没収スタンプ（ドンッと押印） */
+.confiscate-stamp {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(2.8) rotate(-14deg);
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Yu Mincho UI", serif;
+  font-weight: 700;
+  font-size: 60px;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  border: 5px solid var(--primary);
+  border-radius: 12px;
+  padding: 4px 16px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 0 3px rgba(164, 25, 47, .18), 0 6px 20px rgba(139, 15, 35, .25);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1300;
+  white-space: nowrap;
+}
+.confiscate-stamp.show { animation: stampSlam .5s cubic-bezier(.2, .7, .2, 1) forwards; }
+@keyframes stampSlam {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(2.8) rotate(-14deg); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(.9)  rotate(-14deg); }
+  72%  { opacity: 1; transform: translate(-50%, -50%) scale(1.06) rotate(-14deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1)   rotate(-14deg); }
+}
+
+/* 押印の瞬間の画面シェイク */
+.stage.shake { animation: stageShake .5s cubic-bezier(.36, .07, .19, .97); }
+@keyframes stageShake {
+  10%, 90%        { transform: translateX(-2px); }
+  20%, 80%        { transform: translateX(4px); }
+  30%, 50%, 70%   { transform: translateX(-7px); }
+  40%, 60%        { transform: translateX(7px); }
+}
+
+/* ---- 最終結果 ---- */
+.result-title {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  text-align: center;
+  font-size: 36px;
+  color: var(--primary);
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.result-summary { text-align: center; margin-bottom: 22px; }
+.result-summary .lbl { font-size: 12px; color: var(--text); }
+.result-summary .rank-num {
+  font-family: "Cinzel", serif;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.2;
+}
+.result-summary .rank-num .pos { font-size: 14px; color: var(--gold); margin-left: 2px; }
+.result-summary .rose-num {
+  font-family: "Cinzel", serif;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 26px;
+  margin-top: 4px;
+}
+.result-summary .lose { font-size: 12px; color: var(--text-muted); }
+
+.ranking-list { display: flex; flex-direction: column; gap: 10px; }
+.ranking-list .empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 24px 12px;
+}
+.rank-item {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(73,41,28,0.04);
+}
+.rank-item .left { display: flex; align-items: baseline; gap: 8px; }
+.rank-item .rank {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 28px;
+}
+.rank-item .rank.gold { color: var(--gold); }
+.rank-item .rank .pos { font-size: 11px; color: inherit; margin-left: 1px; }
+.rank-item .pair-name { font-weight: 700; font-size: 14px; color: var(--text); }
+.rank-item .roses {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 22px;
+}
+.rank-item .roses .lbl {
+  font-size: 11px; color: var(--primary); margin-right: 4px;
+  font-family: "Hiragino Sans", sans-serif;
+}
+
+.ranking-section-label {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 12px;
+  margin: 4px 0 10px;
+}
+
+/* ---- 管理画面 ---- */
+body.admin { background: #FAF6F0; }
+.admin-stage {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 24px 20px 40px;
+}
+.admin-stage .admin-title {
+  font-size: 14px; font-weight: 700;
+  color: var(--text); margin-bottom: 14px;
+}
+.admin-panel {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  border-radius: 16px;
+  padding: 30px 18px 80px;
+  min-height: calc(100vh - 110px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.admin-status {
+  text-align: center; font-size: 14px;
+  margin-bottom: 14px; opacity: 0.85;
+}
+.admin-q-card {
+  background: #2A1F1C;
+  border-radius: 14px;
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 15px; line-height: 1.6;
+  margin: 0 6px 24px;
+}
+.admin-q-label {
+  text-align: center;
+  font-weight: 700; font-size: 14px;
+  margin-bottom: 12px;
+}
+.admin-correct-block { text-align: center; margin-bottom: 24px; }
+.admin-correct-block .lbl { font-size: 14px; margin-bottom: 6px; opacity: 0.9; }
+.admin-correct-block .val {
+  font-weight: 700; font-size: 44px; letter-spacing: -0.01em;
+}
+.admin-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 14px 32px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-d) 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.20), 0 6px 14px rgba(0,0,0,0.30);
+  min-width: 180px;
+}
+.admin-btn:disabled { background: #6B5550; box-shadow: none; cursor: not-allowed; }
+
+.admin-reset {
+  position: absolute;
+  bottom: 16px; left: 16px; right: 16px;
+  padding: 13px;
+  border: 1px solid #fff;
+  background: transparent;
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.admin-ranking { flex: 1; margin-top: 8px; }
+.admin-ranking .result-title { color: #fff; margin-bottom: 8px; font-size: 26px; }
+.admin-ranking .ranking-section-label { color: #fff; font-size: 11px; opacity: 0.8; }
+
+/* ---- 汎用 ---- */
+.hidden { display: none !important; }
+.center { text-align: center; }
+
+.error-toast {
+  position: fixed; left: 50%;
+  bottom: 30px; transform: translateX(-50%);
+  background: #2D1A18; color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 1000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  animation: toastIn 0.2s ease-out;
+}
+@keyframes toastIn {
+  from { transform: translate(-50%, 8px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 20px;
+  width: 80%;
+  max-width: 320px;
+  color: var(--text);
+  text-align: center;
+}
+.modal-box .msg { font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
+.modal-box .actions { display: flex; gap: 10px; }
+.modal-box .actions button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+.modal-box .ok { background: var(--primary); color: #fff; }
+.modal-box .cancel { background: #EBDBC4; color: var(--text); }

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>パーセント・ローズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <main class="stage" id="stage">
+
+    <!-- ===== Screen: ENTRY (ペア名入力) ===== -->
+    <section id="screen-entry" class="screen">
+      <h1 class="logo"><span class="small">納会2次会 コンテンツ</span>PERCENT<br />ROSE</h1>
+      <p class="lead">2人1組で挑戦！<br />まずはペアの名前を決めよう！</p>
+
+      <div class="card">
+        <label class="field-label" for="pair-name">あなたのペア名</label>
+        <input id="pair-name" class="text-input" type="text" maxlength="8" placeholder="例）IC代表" autocomplete="off" />
+        <span class="helper">8文字以内</span>
+        <button id="btn-entry" class="btn-primary">エントリーして待機する</button>
+        <span class="note">※ ペアの代表者1名がこの画面を操作してください。</span>
+      </div>
+    </section>
+
+    <!-- ===== Screen: WAITING (エントリー完了→開始待ち) ===== -->
+    <section id="screen-waiting" class="screen hidden">
+      <h1 class="logo">PERCENT<br />ROSE</h1>
+      <p class="lead">エントリー完了</p>
+      <div class="card entry-done">
+        <div class="pair" id="waiting-pair">「ペア名」</div>
+        <div class="roses-row">
+          現在<span class="num" id="waiting-roses">100</span>本のバラを保有中
+        </div>
+        <div class="spinner"></div>
+        <div class="wait-msg">開始までしばらくお待ちください…</div>
+      </div>
+    </section>
+
+    <!-- ===== Screen: THEME (出題中) ===== -->
+    <section id="screen-theme" class="screen hidden">
+      <div class="roses-badge">バラ<span id="theme-roses">100</span></div>
+      <span class="q-label" id="theme-q-label">第1問</span>
+      <div class="q-text-card" id="theme-q-text">―</div>
+      <div class="q-block">
+        <div class="answer-value">
+          <span id="theme-input-display">50</span><span class="pct">%</span>
+        </div>
+        <input id="theme-slider" class="slider" type="range" min="0" max="100" value="50" />
+        <div class="scale-row"><span>0%</span><span>100%</span></div>
+        <button id="btn-submit" class="submit-btn">この数字で回答する</button>
+      </div>
+    </section>
+
+    <!-- ===== Screen: SUBMITTED (回答済み→正解待ち) ===== -->
+    <section id="screen-submitted" class="screen hidden">
+      <div class="card submitted-card">
+        <div class="heading">回答完了！</div>
+        <div class="sent"><span id="submitted-value">42</span>%で送信しました！</div>
+        <div class="wait">正解発表をお待ちください…</div>
+        <div class="spinner"></div>
+      </div>
+    </section>
+
+    <!-- ===== Screen: ANSWER (正解発表+演出) ===== -->
+    <section id="screen-answer" class="screen hidden">
+      <div class="reveal-heading">正解は…</div>
+      <div class="card reveal-card">
+        <div class="correct"><span id="answer-correct">―</span><span class="pct">%</span></div>
+        <div class="your" id="answer-your">あなたの回答 ―%</div>
+        <div class="dev-chip hidden" id="answer-dev">誤差 ―</div>
+      </div>
+
+      <!-- Phase: おじさん登場（正解カードに同居して段階表示） -->
+      <div class="ojisan-stage reveal-step hidden" id="phase-ojisan">
+        <div class="bubble" id="answer-bubble">誤差の分だけ没収するよーん。</div>
+        <img class="ojisan-img" src="./images/ojisan_take.png" alt="お花没収おじさん" />
+        <div class="confiscate-stamp" id="confiscate-stamp">没収</div>
+      </div>
+
+      <!-- Phase: バラ残数カード（画面を切り替えず被せて表示） -->
+      <div class="rose-card reveal-step hidden" id="phase-roses">
+        <div class="label" id="rose-card-label">残りのバラ</div>
+        <div class="num" id="rose-card-num">100</div>
+        <div class="caption-wrap">
+          <img id="rose-bouquet" class="bouquet" src="./images/rose_100.png" alt="バラ" />
+          <div class="caption" id="rose-card-caption">次の画面まで少々お待ちください…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Screen: FINAL RESULT ===== -->
+    <section id="screen-result" class="screen hidden">
+      <h2 class="result-title">RESULT</h2>
+      <div class="result-summary" id="result-summary">
+        <!-- JS が中身を差し込む -->
+      </div>
+      <div class="ranking-section-label">ランキング（クリアしたペアのみ）</div>
+      <div class="ranking-list" id="ranking-list"><!-- JS --></div>
+    </section>
+
+  </main>
+
+  <!-- ===== Toast / Modal placeholder ===== -->
+  <div id="toast-holder"></div>
+
+  <!-- ===== Scripts ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>

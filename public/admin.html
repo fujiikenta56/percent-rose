@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>パーセント・ローズ 運営パネル</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body class="admin">
+  <div class="admin-stage">
+    <div class="admin-title">運営パネル</div>
+    <section class="admin-panel" id="admin-panel">
+
+      <!-- ENTRY フェーズ -->
+      <div id="admin-view-entry" class="admin-view hidden">
+        <div class="admin-status">エントリー受付中です。</div>
+        <button id="btn-start" class="admin-btn">問題を表示する</button>
+        <div class="admin-status" style="margin-top:18px;font-size:12px;opacity:0.65;">
+          現在 <span id="entry-count">0</span> ペアがエントリー済み
+        </div>
+      </div>
+
+      <!-- THEME フェーズ -->
+      <div id="admin-view-theme" class="admin-view hidden">
+        <div class="admin-q-label" id="admin-q-label">第1問</div>
+        <div class="admin-q-card" id="admin-q-text">―</div>
+        <button id="btn-reveal" class="admin-btn">正解を表示する</button>
+        <div class="admin-status" style="margin-top:18px;font-size:12px;opacity:0.65;">
+          回答済み <span id="answer-count">0</span> / <span id="user-count">0</span> ペア
+        </div>
+      </div>
+
+      <!-- ANSWER フェーズ (途中問題) -->
+      <div id="admin-view-answer" class="admin-view hidden">
+        <div class="admin-correct-block">
+          <div class="lbl">正解</div>
+          <div class="val" id="admin-correct">―%</div>
+        </div>
+        <button id="btn-next" class="admin-btn">次の問題へ</button>
+        <button id="btn-final" class="admin-btn hidden" style="margin-top:12px;">最終結果へ</button>
+      </div>
+
+      <!-- FINAL RESULT フェーズ -->
+      <div id="admin-view-result" class="admin-view hidden">
+        <div class="admin-ranking">
+          <h2 class="result-title">RESULT</h2>
+          <div class="ranking-section-label">ランキング（クリアしたペアのみ）</div>
+          <div class="ranking-list" id="admin-ranking-list"></div>
+        </div>
+      </div>
+
+      <button id="btn-reset" class="admin-reset">リセット（初期化）</button>
+    </section>
+  </div>
+
+  <div id="toast-holder"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/admin.js"></script>
+</body>
+</html>
