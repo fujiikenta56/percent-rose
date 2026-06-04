@@ -31,6 +31,7 @@ body {
   color: var(--text);
   background: var(--bg);
   min-height: 100vh;
+  min-height: 100dvh;   /* モバイルのツールバー伸縮で底が見切れるのを防ぐ動的ビューポート高 */
   overflow-x: hidden; /* シェイク演出時の横はみ出し対策 */
   -webkit-font-smoothing: antialiased;
   font-size: 17px; /* 視認性向上のためベースフォントを拡大 (項目4) */
@@ -40,6 +41,7 @@ body {
   max-width: 420px;
   margin: 0 auto;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 28px 20px 40px;
   position: relative;
 }
@@ -286,8 +288,8 @@ body {
 .submitted-card .wait { color: var(--text-muted); font-size: 15px; }
 
 /* ---- 正解発表 ---- */
-/* 固定待機フッター(高さ約56px)と演出カードが重ならないよう下部余白を確保 */
-#screen-answer { padding-bottom: 72px; }
+/* 固定待機フッター(高さ約56px)+セーフエリアと演出カードが重ならないよう下部余白を確保 */
+#screen-answer { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .reveal-heading {
   text-align: center;
   color: var(--primary);
@@ -336,6 +338,9 @@ body {
 .ojisan-img {
   width: 70%;
   max-width: 240px;
+  /* 画面高が小さい端末では縦溢れを防ぐため高さも上限を設ける(比率維持で縮小) */
+  max-height: 26vh;
+  object-fit: contain;
   display: block;
   margin: 0 auto;
 }
@@ -362,6 +367,9 @@ body {
 .rose-card img.bouquet {
   width: 55%;
   max-width: 200px;
+  /* 画面高が小さい端末では縦溢れを防ぐため高さも上限を設ける(比率維持で縮小) */
+  max-height: 24vh;
+  object-fit: contain;
   display: block;
   margin: 6px auto 10px;
 }
@@ -445,6 +453,8 @@ body {
   justify-content: center;
   gap: 12px;
   padding: 16px 20px;
+  /* iPhone 等のホームインジケータ(セーフエリア)に被らないよう下余白を上乗せ */
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
   background: var(--bg);            /* ベースカラー (画面背景と統一) */
   color: var(--text);              /* テキストカラー */
   border-top: 1px solid var(--line);
