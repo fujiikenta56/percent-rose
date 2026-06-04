@@ -20,6 +20,7 @@ input { font: inherit; }
   --text:       #3D2A28;
   --text-muted: #8B7B70;
   --line:       #EBDBC4;
+  --sub:        #7A5A3C;  /* design.md サブカラー: 枠線・補足/シックなトーン用 */
 
   --admin-bg:   #4B3B36;
   --admin-text: #FFFFFF;
@@ -44,7 +45,8 @@ body {
 }
 
 .logo {
-  font-family: "Cinzel", "Times New Roman", serif;
+  /* バラの本数・正解％の数字 (.num / .correct 等) と同一のフォント指定に統一 */
+  font-family: "Cinzel", serif;
   font-weight: 700;
   color: var(--primary);
   text-align: center;
@@ -284,6 +286,8 @@ body {
 .submitted-card .wait { color: var(--text-muted); font-size: 15px; }
 
 /* ---- 正解発表 ---- */
+/* 固定待機フッター(高さ約56px)と演出カードが重ならないよう下部余白を確保 */
+#screen-answer { padding-bottom: 72px; }
 .reveal-heading {
   text-align: center;
   color: var(--primary);
@@ -423,6 +427,55 @@ body {
   40%, 60%        { transform: translateX(7px); }
 }
 
+/* =====================================================================
+   固定フッター: ANSWER 演出が完全終了したら下部に固定表示する待機メッセージ
+   - 左:ローディングサークル / 右:テキスト を中央揃えで横並び
+   - #stage の外に配置し、シェイク演出(transform)の影響を受けないようにする
+   ===================================================================== */
+.wait-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 420px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg);            /* ベースカラー (画面背景と統一) */
+  color: var(--text);              /* テキストカラー */
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(73, 41, 28, 0.08);
+  z-index: 1000;
+  /* 初期は伏せておき、演出完了時に .show でフェードイン */
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity .5s ease, transform .5s ease;
+  pointer-events: none;
+}
+.wait-footer.show {
+  opacity: 1;
+  transform: none;
+}
+.wait-footer-spinner {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(122, 90, 60, 0.25);  /* サブカラー(#7A5A3C)の淡色リング */
+  border-top-color: var(--sub);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.wait-footer-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+
 /* ---- 最終結果 ---- */
 .result-title {
   font-family: "Cinzel", serif;
@@ -431,38 +484,52 @@ body {
   font-size: 36px;
   color: var(--primary);
   letter-spacing: 0.08em;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
-.result-summary { text-align: center; margin-bottom: 22px; }
+.result-summary { text-align: center; margin-bottom: 24px; }
 .result-summary .lbl { font-size: 14px; color: var(--text); }
 .result-summary .rank-num {
   font-family: "Cinzel", serif;
   color: var(--gold);
   font-weight: 700;
-  font-size: 30px;
+  font-size: 32px;
   line-height: 1.2;
 }
-.result-summary .rank-num .pos { font-size: 14px; color: var(--gold); margin-left: 2px; }
+.result-summary .rank-num .pos { font-size: 14px; color: var(--gold); margin-left: 4px; }
 .result-summary .rose-num {
   font-family: "Cinzel", serif;
   color: var(--primary);
   font-weight: 700;
-  font-size: 26px;
+  font-size: 28px;
   margin-top: 4px;
 }
 .result-summary .lose { font-size: 14px; color: var(--text-muted); }
 
-.ranking-list { display: flex; flex-direction: column; gap: 10px; }
+/* ---- 最終結果: おじさん演出 (残数で画像とセリフを分岐) ---- */
+.result-ojisan {
+  margin: 0 0 24px;
+  text-align: center;
+}
+.result-ojisan-img {
+  display: block;
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  margin: 0 auto 12px;
+}
+/* セリフ(#result-ojisan-bubble)は ANSWER 画面の .bubble と同一デザインを共有する */
+
+.ranking-list { display: flex; flex-direction: column; gap: 12px; }
 .ranking-list .empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
   padding: 24px 12px;
 }
 .rank-item {
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px 18px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 16px 20px;
   display: flex; align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(73,41,28,0.04);
@@ -475,7 +542,7 @@ body {
   font-size: 28px;
 }
 .rank-item .rank.gold { color: var(--gold); }
-.rank-item .rank .pos { font-size: 11px; color: inherit; margin-left: 1px; }
+.rank-item .rank .pos { font-size: 14px; color: inherit; margin-left: 4px; }
 .rank-item .pair-name { font-weight: 700; font-size: 16px; color: var(--text); }
 .rank-item .roses {
   font-family: "Cinzel", serif;
@@ -484,7 +551,7 @@ body {
   font-size: 22px;
 }
 .rank-item .roses .lbl {
-  font-size: 11px; color: var(--primary); margin-right: 4px;
+  font-size: 14px; color: var(--primary); margin-right: 4px;
   font-family: "Hiragino Sans", sans-serif;
 }
 
@@ -492,7 +559,7 @@ body {
   color: var(--primary);
   font-weight: 700;
   font-size: 14px;
-  margin: 4px 0 10px;
+  margin: 4px 0 12px;
 }
 
 /* ---- 管理画面 ---- */

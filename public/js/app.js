@@ -36,6 +36,19 @@
   function showScreen(id) {
     document.querySelectorAll(".screen").forEach((el) => el.classList.add("hidden"));
     $("#" + id).classList.remove("hidden");
+    // 画面が切り替わるたびに待機フッターは必ず伏せる。
+    // ANSWER 画面では演出完了時に finalizeRoseCard から改めて表示する。
+    hideWaitFooter();
+  }
+
+  /* ----- 固定待機フッター (ANSWER 演出完了後に表示) ----- */
+  function showWaitFooter() {
+    const f = $("#wait-footer");
+    if (f) f.classList.add("show");
+  }
+  function hideWaitFooter() {
+    const f = $("#wait-footer");
+    if (f) f.classList.remove("show");
   }
   function toast(msg, ms = 2400) {
     const holder = $("#toast-holder");
@@ -413,6 +426,7 @@
     bouquet.classList.remove("shaking");
     captionEl.textContent = "おじさんが近づいてきた…";
     captionEl.style.whiteSpace = "";
+    captionEl.classList.remove("hidden");
   }
 
   /* ----- バラ残数カードの最終状態 (搾取後) を反映 ----- */
@@ -424,23 +438,34 @@
     const captionEl = $("#rose-card-caption");
     bouquet.classList.remove("shaking");
     bouquet.src = bouquetFor(after);
+    // 「次の画面まで…」の待機文言は固定フッターへ移設したため、カード内からは除去する。
     if (after === 0) {
       numEl.classList.add("zero");
       // 項目3: 0 のときも単位「本」を必ず付ける (他の残数表示と統一)
       numEl.innerHTML = `0<span class="unit">本</span>`;
       labelEl.textContent = "全部のバラがおじさんに\n没収されました…💐";
       labelEl.style.whiteSpace = "pre-line";
-      captionEl.textContent = "バラは0本だけど\n引き続きゲームはエンジョイできます！\n次の画面まで少々お待ちください…";
+      captionEl.textContent = "バラは0本だけど\n引き続きゲームはエンジョイできます！";
       captionEl.style.whiteSpace = "pre-line";
+      captionEl.classList.remove("hidden");
     } else {
       numEl.classList.remove("zero");
       numEl.innerHTML = `${after}<span class="unit">本</span>`;
       labelEl.textContent = "残りのバラ";
       labelEl.style.whiteSpace = "";
-      captionEl.textContent = "次の画面まで少々お待ちください…";
+      // 残数ありの場合はカード内に追加文言が無いため caption を畳む
+      captionEl.textContent = "";
       captionEl.style.whiteSpace = "";
+      captionEl.classList.add("hidden");
     }
     if (didConfiscate) fireConfiscateShake();
+
+    // すべての演出が着地したこのタイミングで待機フッターをフェードイン。
+    // 搾取シェイク(約0.5s)が走る場合はその後に出す。answerTimers 管理で
+    // 画面遷移時に確実にクリアされる。
+    state.answerTimers.push(
+      setTimeout(showWaitFooter, didConfiscate ? 700 : 300)
+    );
   }
 
   /* ----- 数値のロールダウン (requestAnimationFrame) ----- */
@@ -658,12 +683,14 @@
     const me = normalized.find((u) => u.line_user_id === state.lineUserId);
     const myRank = clearedSorted.findIndex((u) => u.line_user_id === state.lineUserId);
 
+    const myRoses = me ? me.roses : 0;
+
     const summary = $("#result-summary");
-    if (me && me.roses > 0) {
+    if (myRoses > 0) {
       summary.innerHTML = `
         <div class="lbl">あなたのペアは</div>
         <div class="rank-num">${myRank + 1}<span class="pos">位</span></div>
-        <div class="rose-num">バラ${me.roses}本</div>
+        <div class="rose-num">バラ${myRoses}本</div>
       `;
     } else {
       summary.innerHTML = `
@@ -671,6 +698,21 @@
         <div class="lose">残念脱落…💐</div>
         <div class="rose-num">バラ0本</div>
       `;
+    }
+
+    // 残りのバラの数に応じておじさんの画像とセリフを切り替える。
+    //   0 本(脱落)        → ojisan_fail  「かわいそう、、」
+    //   1 本以上(クリア)  → ojisan_clear 「がんばったねwwwwwww」
+    const ojisanImg = $("#result-ojisan-img");
+    const ojisanBubble = $("#result-ojisan-bubble");
+    if (myRoses > 0) {
+      ojisanImg.src = "./images/ojisan_clear.png";
+      ojisanImg.alt = "クリアを称えるお花没収おじさん";
+      ojisanBubble.textContent = "がんばったねwwwwwww";
+    } else {
+      ojisanImg.src = "./images/ojisan_fail.png";
+      ojisanImg.alt = "脱落を悼むお花没収おじさん";
+      ojisanBubble.textContent = "かわいそう、、";
     }
 
     const listEl = $("#ranking-list");

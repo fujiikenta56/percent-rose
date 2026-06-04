@@ -18,5 +18,5 @@ window.APP_CONFIG = {
 
   // ローカルは null（dev擬似ID）、本番は LINE の LIFF ID。
   // ↓ "YOUR_LIFF_ID_HERE" を LINE Developers Console の LIFF ID に置き換えてください。
-  LIFF_ID: isLocalhost ? null : "2010233781-WBsoHYca",
+  LIFF_ID: isLocalhost ? null : "2010233783-lyQhUKGT",
 };

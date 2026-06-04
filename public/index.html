@@ -99,11 +99,21 @@
       <div class="result-summary" id="result-summary">
         <!-- JS が中身を差し込む -->
       </div>
+      <figure class="result-ojisan" id="result-ojisan">
+        <img class="result-ojisan-img" id="result-ojisan-img" src="" alt="" />
+        <figcaption class="bubble" id="result-ojisan-bubble"></figcaption>
+      </figure>
       <div class="ranking-section-label">ランキング（クリアしたペアのみ）</div>
       <div class="ranking-list" id="ranking-list"><!-- JS --></div>
     </section>
 
   </main>
+
+  <!-- ===== 固定フッター: ANSWER 演出完了後に表示する待機メッセージ ===== -->
+  <footer class="wait-footer" id="wait-footer" aria-live="polite">
+    <span class="wait-footer-spinner" aria-hidden="true"></span>
+    <span class="wait-footer-text">次の画面までそのままお待ちください</span>
+  </footer>
 
   <!-- ===== Toast / Modal placeholder ===== -->
   <div id="toast-holder"></div>
