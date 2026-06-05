@@ -24,11 +24,6 @@ input { font: inherit; }
 
   --admin-bg:   #4B3B36;
   --admin-text: #FFFFFF;
-
-  /* LINEミニアプリ(LIFF)が最上部にオーバーレイ挿入するヘッダーの追加リザーブ量。
-     stage 上padding(28px)に上乗せされ、合計 約88px をヘッダー回避に確保する。
-     実機確認後、見出しの隠れ/余白過多に応じてこの1箇所だけ調整すればよい。 */
-  --liff-header-reserve: 60px;
 }
 
 body {
@@ -293,28 +288,24 @@ body {
 .submitted-card .wait { color: var(--text-muted); font-size: 15px; }
 
 /* ---- 正解発表 ---- */
-/* LINEミニアプリ(LIFF)前提で1画面(ファーストビュー)に収め切る:
-   - LIFF は最上部に閉じるボタン等の固定ヘッダー(約80〜90px)を挿入するため、
-     可視領域はデバイス全高(iPhone 16: 852px)よりさらに狭い。
-   - #screen-answer 自体を「stage の上下padding(28+40px)を差し引いた高さ」に固定した
-     flex 縦並びコンテナとし、overflow:hidden で強制的にスクロールを禁止する。
-   - ヘッダーの実装差(ネイティブ描画でdvhが既にヘッダーを除外する型 / ページ内へ
-     オーバーレイ挿入される型)のどちらでも破綻しないよう、上部に --liff-header-reserve を
-     確保。オーバーレイ型では見出しがヘッダーに隠れるのを防ぎ、ネイティブ型では単に
-     上部余白になるだけ(box-sizing:border-box なので高さは膨らまずスクロールしない)。
-   - 4ブロック(正解見出し / 正解カード / おじさん / バラ残数)を上寄せで詰め、画像は
-     min(dvh, px) 上限で iPhone 16 では一定サイズに、小型端末では自動縮小させる。 */
+/* LINEミニアプリ前提で1画面(ファーストビュー)に美しく収める:
+   - LIFFヘッダーはWebView外に描画され dvh は既にその分を除外するため、上部リザーブは設けない。
+   - #screen-answer を「stage の上下padding(28+40px)を差し引いた高さ」を min-height とした
+     flex 縦並びコンテナとし、justify-content:center で4ブロックを縦中央バランスに配置する。
+   - 各ブロックは flex-shrink を効かせ(flex:none で固めない)、縦幅が狭い端末では自然に縮んで
+     1画面に収まろうとする。画像も dvh 上限で連動して縮小する。
+   - 万一それでも溢れる極端な縦狭端末(Android等)では overflow-y:auto でスクロール救済する
+     (overflow:hidden で詰ませない)。 */
 #screen-answer {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  /* stage の上下padding(28px+40px)を相殺し、可視領域ぴったりに収める */
-  height: calc(100dvh - 68px);
-  max-height: calc(100dvh - 68px);
-  overflow: hidden;
+  justify-content: center;
+  gap: 8px;
+  /* stage の上下padding(28px+40px)を相殺。固定でなく min-height にして、
+     収まる時は中央寄せ・溢れる時は伸びてスクロールできるようにする */
+  min-height: calc(100dvh - 68px);
+  overflow-y: auto;
   margin-top: 0;
-  /* stage上padding(28px)に上乗せし、合計でLIFFヘッダー(約88px)分を上部にリザーブ */
-  padding-top: var(--liff-header-reserve);
   /* 演出完了後に出る固定フッター(約56px)+ホームインジケータと重ならない余白 */
   padding-bottom: calc(60px + env(safe-area-inset-bottom));
 }
@@ -325,8 +316,9 @@ body {
   font-size: 16px;
   margin: 2px 0 4px;
 }
-/* 正解カードは縦圧迫を抑えるため共通 .card より padding を引き締める */
-.reveal-card { text-align: center; padding: 14px 16px; flex: none; }
+/* 正解カードは縦圧迫を抑えるため共通 .card より padding を引き締める。
+   flex:none では固めず、縦狭端末で自然に縮めるよう flex-shrink を許可 */
+.reveal-card { text-align: center; padding: 14px 16px; flex: 0 1 auto; }
 .reveal-card .correct {
   font-family: "Cinzel", serif;
   font-weight: 700;
@@ -353,7 +345,8 @@ body {
   margin-top: 2px;
   text-align: center;
   position: relative;
-  flex: none;
+  flex: 0 1 auto;
+  min-height: 0;   /* flex子が画像分まで縮めるように */
 }
 .bubble {
   display: inline-block;
@@ -366,11 +359,10 @@ body {
   margin-bottom: 4px;
 }
 .ojisan-img {
-  width: 60%;
-  max-width: 200px;
-  /* 縦圧迫の主因となる画像を一回り小さく制限。iPhone16ではpx上限で一定サイズ、
-     小型端末では dvh 側が効いて自動縮小する(min で小さい方を採用) */
-  max-height: min(18dvh, 150px);
+  width: 66%;
+  max-width: 220px;
+  /* iPhone16で寂しくならない迫力を確保しつつ、dvh連動で縦狭端末では自動縮小 */
+  max-height: 22dvh;
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -383,7 +375,8 @@ body {
   padding: 12px 16px;
   text-align: center;
   box-shadow: 0 2px 10px rgba(73,41,28,0.05);
-  flex: none;
+  flex: 0 1 auto;
+  min-height: 0;   /* flex子(バラ画像)分まで縮めるように */
 }
 .rose-card .label { font-size: 14px; color: var(--primary); font-weight: 700; }
 .rose-card .num {
@@ -397,10 +390,10 @@ body {
 .rose-card .num.zero { color: var(--primary); }
 .rose-card .unit { font-size: 17px; color: var(--text); margin-left: 4px; font-weight: 700; }
 .rose-card img.bouquet {
-  width: 48%;
-  max-width: 168px;
-  /* おじさん画像と合わせ、バラ画像も min(dvh, px) 上限で縦溢れを抑制 */
-  max-height: min(14dvh, 110px);
+  width: 54%;
+  max-width: 188px;
+  /* おじさん画像と合わせ、バラ画像も dvh 連動で縦狭端末では自動縮小 */
+  max-height: 18dvh;
   object-fit: contain;
   display: block;
   margin: 2px auto 4px;
