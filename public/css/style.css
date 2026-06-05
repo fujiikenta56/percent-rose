@@ -291,24 +291,35 @@ body {
 /* LINEミニアプリ前提で1画面(ファーストビュー)に美しく収める:
    - LIFFヘッダーはWebView外に描画され dvh は既にその分を除外するため、上部リザーブは設けない。
    - #screen-answer を「stage の上下padding(28+40px)を差し引いた高さ」を min-height とした
-     flex 縦並びコンテナとし、justify-content:center で4ブロックを縦中央バランスに配置する。
+     flex 縦並びコンテナとし、上下の ::before/::after スペーサーで縦位置を制御する。
+   - スペーサーの flex-grow 比を 上:下 = 1:2 にし、余白の多い iPhone 16 では上を空けすぎず
+     「中央やや上」の迫力あるバランスに、余白の無い Android では両スペーサーが潰れて従来どおり
+     上から詰まる(=Android の良好な表示を崩さない)。
    - 各ブロックは flex-shrink を効かせ(flex:none で固めない)、縦幅が狭い端末では自然に縮んで
      1画面に収まろうとする。画像も dvh 上限で連動して縮小する。
-   - 万一それでも溢れる極端な縦狭端末(Android等)では overflow-y:auto でスクロール救済する
-     (overflow:hidden で詰ませない)。 */
+   - 万一それでも溢れる極端な縦狭端末では overflow-y:auto でスクロール救済する。 */
 #screen-answer {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 8px;
   /* stage の上下padding(28px+40px)を相殺。固定でなく min-height にして、
-     収まる時は中央寄せ・溢れる時は伸びてスクロールできるようにする */
+     収まる時はスペーサーで中央やや上・溢れる時は伸びてスクロールできるようにする */
   min-height: calc(100dvh - 68px);
   overflow-y: auto;
   margin-top: 0;
   /* 演出完了後に出る固定フッター(約56px)+ホームインジケータと重ならない余白 */
   padding-bottom: calc(60px + env(safe-area-inset-bottom));
 }
+/* 上下の可変スペーサー。余白を上:下=1:2 で配分し、縦に余裕のある端末でも上を空けすぎない。
+   縦狭端末では flex-basis:0 + flex-shrink で 0 まで潰れ、コンテンツ表示を阻害しない。 */
+#screen-answer::before,
+#screen-answer::after {
+  content: "";
+  flex-shrink: 1;
+  min-height: 0;
+}
+#screen-answer::before { flex: 1 1 0; }
+#screen-answer::after  { flex: 2 1 0; }
 .reveal-heading {
   text-align: center;
   color: var(--primary);
