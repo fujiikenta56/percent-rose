@@ -11,7 +11,23 @@
       "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('public/css/style.css','utf8'\\);const o=\\(c.match\\(/{/g\\)||[]\\).length,cl=\\(c.match\\(/}/g\\)||[]\\).length;console.log\\('open',o,'close',cl, o===cl?'BALANCED':'MISMATCH'\\)\")",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git -C /mnt/c/Users/ke.fujii/Documents/percent-rose remote -v)",
+      "Bash(git -C /mnt/c/Users/ke.fujii/Documents/percent-rose status)",
+      "Bash(git -C /mnt/c/Users/ke.fujii/Documents/percent-rose diff --stat)",
+      "Bash(npx playwright *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -sf http://localhost:4173/index.html)",
+      "Read(//tmp/**)",
+      "Bash(gh repo *)",
+      "Bash(curl -s https://api.github.com/repos/fujiikenta56/percent-rose)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{try{const j=JSON.parse\\(d\\);console.log\\('private:',j.private,'visibility:',j.visibility,'message:',j.message\\);}catch\\(e\\){console.log\\(d\\)}}\\)\")",
+      "Bash(git diff *)",
+      "Bash(git checkout *)",
+      "Bash(git rm *)",
+      "Bash(node verify.j)",
+      "Bash(ldd /home/kefujii/.cache/ms-playwright/chromium_headless_shell-1228/chrome-headless-shell-linux64/chrome-headless-shell)",
+      "Bash(curl *)"
     ]
   }
 }

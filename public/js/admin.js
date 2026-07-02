@@ -23,6 +23,25 @@
     return Math.max(0, Math.min(100, Math.round(n)));
   }
 
+  /* ----- 全ペアの順位付きランキングを算出 -----
+     バラ残数の降順で並べ、同数のペアは同順位として扱う (例: 2組が2位→次は4位)。
+     脱落済み(0本)のペアも順位に含める。 */
+  function computeRanking(rows) {
+    const sorted = rows
+      .map((u) => ({ ...u, roses: clampRoses(u.total_roses) }))
+      .sort((a, b) => b.roses - a.roses);
+    let rank = 0;
+    let prevRoses = null;
+    sorted.forEach((u, idx) => {
+      if (u.roses !== prevRoses) {
+        rank = idx + 1;
+        prevRoses = u.roses;
+      }
+      u.rank = rank;
+    });
+    return sorted;
+  }
+
   /* ----------------------- Toast / Modal ----------------------- */
   function toast(msg, ms = 2400) {
     const holder = $("#toast-holder");
@@ -132,30 +151,44 @@
   async function renderRanking() {
     const { data } = await sb
       .from("users")
-      .select("line_user_id, pair_name, total_roses")
-      .order("total_roses", { ascending: false });
-    // 残数を正規化 (NaN/負値/範囲外→0〜100) し、0本(脱落)を確実に除外・整列
-    const normalized = (data || []).map((u) => ({ ...u, roses: clampRoses(u.total_roses) }));
-    const cleared = normalized
-      .filter((u) => u.roses > 0)
-      .sort((a, b) => b.roses - a.roses);
+      .select("line_user_id, pair_name, total_roses");
+    // 全ペア(脱落含む)の順位を算出し、クリア組と脱落組(0本)に分けて表示する。
+    const ranked = computeRanking(data || []);
+    const cleared = ranked.filter((u) => u.roses > 0);
+    const eliminated = ranked.filter((u) => u.roses === 0);
+
     const list = $("#admin-ranking-list");
     if (cleared.length === 0) {
       list.innerHTML = `<div class="empty" style="color:#fff;opacity:0.8;">達成者はいませんでした…</div>`;
-      return;
+    } else {
+      list.innerHTML = cleared.map((u) => {
+        const goldClass = u.rank === 1 ? "gold" : "";
+        return `
+          <div class="rank-item">
+            <div class="left">
+              <span class="rank ${goldClass}">${u.rank}<span class="pos">位</span></span>
+              <span class="pair-name">${escapeHtml(u.pair_name)}</span>
+            </div>
+            <div class="roses"><span class="lbl">バラ</span>${u.roses}</div>
+          </div>`;
+      }).join("");
     }
-    list.innerHTML = cleared.map((u, idx) => {
-      const pos = idx + 1;
-      const goldClass = pos === 1 ? "gold" : "";
-      return `
-        <div class="rank-item">
+
+    const elimLabelEl = $("#admin-eliminated-label");
+    const elimListEl = $("#admin-eliminated-list");
+    if (eliminated.length === 0) {
+      elimLabelEl.classList.add("hidden");
+      elimListEl.innerHTML = "";
+    } else {
+      elimLabelEl.classList.remove("hidden");
+      elimListEl.innerHTML = eliminated.map((u) => `
+        <div class="rank-item eliminated">
           <div class="left">
-            <span class="rank ${goldClass}">${pos}<span class="pos">位</span></span>
             <span class="pair-name">${escapeHtml(u.pair_name)}</span>
           </div>
-          <div class="roses"><span class="lbl">バラ</span>${u.roses}</div>
-        </div>`;
-    }).join("");
+          <div class="roses"><span class="lbl">バラ</span>0</div>
+        </div>`).join("");
+    }
   }
 
   function escapeHtml(s) {

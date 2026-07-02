@@ -1,11 +1,9 @@
 # 機密情報を含むファイル（Gitの追跡対象から除外）
 #
-# 注意: public/js/config.js は除外しない。
-#   GitHub Pages のような静的ホスティングではビルド時に値を注入できないため、
-#   config.js を追跡対象から外すと本番環境で 404 になり、APP_CONFIG が
-#   未定義 → Supabase クライアント(window.sb)が生成されず、画面が真っ白になる。
-#   config.js に入れるのは「クライアントに公開される前提」の値のみ:
-#     - SUPABASE_ANON_KEY（公開鍵。保護は Supabase 側の RLS で行う）
-#     - LIFF_ID（LIFF アプリの公開ID）
-#   サーバ秘密鍵(service_role 等)は絶対にここへ置かないこと。
+# public/js/config.js: Supabase接続情報(URL/anon key)・LIFF_IDを生の値で持つため
+#   公開リポジトリのコミット履歴に残さない方針で除外する。
+#   本番用は .github/workflows/deploy.yml がリポジトリシークレットから
+#   デプロイ時に自動生成する（README 8-3参照）。ローカル開発では
+#   config.example.js をコピーして各自 config.js を作成すること。
+public/js/config.js
 requirements.pdf

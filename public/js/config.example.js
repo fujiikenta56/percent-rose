@@ -10,6 +10,6 @@ window.APP_CONFIG = {
   SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY_HERE",
 
   // LINEミニアプリの LIFF ID。LIFFを使わずローカル検証する場合は null にすると
-  // 「dev_」プレフィックス付きの擬似 line_user_id が localStorage に保存される。
+  // 「dev_」プレフィックス付きの擬似 line_user_id が sessionStorage（タブ/ウィンドウ単位）に保存される。
   LIFF_ID: null,
 };

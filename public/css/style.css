@@ -183,6 +183,61 @@ body {
   margin-top: 4px;
 }
 
+/* ---- 進行ステータスバー (出題中/回答済み/正解発表 共通) ----
+   ペア名は「誰の画面か」を示すただのラベルなので、進捗ピルと同じ枠で
+   囲わず地の文として表示する。進捗(第N問/残りN問)だけをピル状のバッジにする。 */
+.status-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+/* screen-theme のみ右上に絶対配置の .roses-badge が同居するため、重ならないよう下げる */
+#screen-theme .status-bar { margin-top: 44px; }
+/* q-label 廃止に伴い、質問カードとの間隔をここで確保する */
+#screen-theme .status-bar { margin-bottom: 24px; }
+.status-pair {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+.status-pair-label {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--sub);
+}
+.status-pair-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.02em;
+  position: relative;
+  padding-bottom: 2px;
+}
+.status-pair-name::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 999px;
+  opacity: 0.6;
+}
+.status-progress {
+  display: inline-block;
+  background: var(--bg-card);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sub);
+  box-shadow: 0 2px 8px rgba(73,41,28,0.05);
+}
+
 /* ---- 出題画面 ---- */
 .roses-badge {
   position: absolute;
@@ -191,15 +246,6 @@ body {
   font-weight: 700;
   color: var(--primary);
   font-size: 20px;
-}
-.q-label {
-  display: block;
-  text-align: center;
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--primary);
-  margin: 36px 0 12px;
-  letter-spacing: 0.04em;
 }
 .q-text-card {
   background: var(--bg-card);
@@ -600,6 +646,34 @@ body {
   font-size: 14px; color: var(--primary); margin-right: 4px;
   font-family: "Hiragino Sans", sans-serif;
 }
+
+/* 自分のペアの行を強調表示 (最終結果画面) */
+.rank-item.me {
+  border: 2px solid var(--primary);
+  box-shadow: 0 4px 12px rgba(164,25,47,0.15);
+}
+.rank-item .you-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* ---- 脱落ペア (最終結果: バラ0本) ---- */
+.rank-item.eliminated {
+  background: var(--bg-soft);
+  box-shadow: none;
+  opacity: 0.7;
+}
+.rank-item.eliminated .pair-name,
+.rank-item.eliminated .roses,
+.rank-item.eliminated .roses .lbl { color: var(--text-muted); }
+.eliminated-label { margin-top: 20px; }
 
 .ranking-section-label {
   color: var(--primary);

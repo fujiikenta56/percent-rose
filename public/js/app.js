@@ -22,6 +22,7 @@
     currentQId: null,
     currentDisplayOrder: null,
     currentQuestion: null,    // { question_id, text, display_order }
+    totalQuestions: null,     // 本番問題の総数 (練習問題を除く)
     revealedCorrect: null,
     myAnswer: null,           // 現問の自分の回答 (一発勝負)
     submittedQId: null,       // 送信済みquestion_id (二重送信防止)
@@ -68,6 +69,49 @@
     return Math.max(0, Math.min(100, Math.round(n)));
   }
 
+  /* ----- 全ペアの順位付きランキングを算出 -----
+     バラ残数の降順で並べ、同数のペアは同順位として扱う (例: 2組が2位→次は4位)。
+     脱落済み(0本)のペアも順位に含める。 */
+  function computeRanking(rows) {
+    const sorted = rows
+      .map((u) => ({ ...u, roses: clampRoses(u.total_roses) }))
+      .sort((a, b) => b.roses - a.roses);
+    let rank = 0;
+    let prevRoses = null;
+    sorted.forEach((u, idx) => {
+      if (u.roses !== prevRoses) {
+        rank = idx + 1;
+        prevRoses = u.roses;
+      }
+      u.rank = rank;
+    });
+    return sorted;
+  }
+
+  /* ----- ステータスバー (ペア名/問題の進捗) の反映 -----
+     現在順位はランキングが動く最終結果画面でのみ意味を持つため、出題中は表示しない。
+     screen-theme / screen-submitted / screen-answer に同じクラスで
+     配置しているため、querySelectorAll で一括更新する。 */
+  function updateStatusBar() {
+    document.querySelectorAll(".status-pair").forEach((el) => {
+      el.innerHTML = state.pairName
+        ? `<span class="status-pair-label">PAIR</span><span class="status-pair-name">${escapeHtml(state.pairName)}</span>`
+        : "";
+    });
+
+    const order = state.currentDisplayOrder;
+    let progressText = "";
+    if (order === 0) {
+      progressText = "練習問題";
+    } else if (order != null && state.totalQuestions) {
+      const remaining = state.totalQuestions - order;
+      progressText = `第${order}問／全${state.totalQuestions}問（残り${remaining}問）`;
+    }
+    document.querySelectorAll(".status-progress").forEach((el) => {
+      el.textContent = progressText;
+    });
+  }
+
   /* ----- 自分の最新バラ残数を DB から取得 (確定値) ----- */
   async function fetchMyRoses() {
     if (!state.lineUserId) return null;
@@ -97,11 +141,13 @@
         return null;
       }
     }
-    // dev モード: ブラウザごとに固定の擬似ID
-    let devId = localStorage.getItem("pr_dev_uid");
+    // dev モード: タブ/ウィンドウごとに固定の擬似ID
+    // sessionStorage はタブ単位でスコープされるため、同じブラウザの別タブ/
+    // 別ウィンドウを開くだけで別ペアとして扱える（同一タブのリロードでは保持）。
+    let devId = sessionStorage.getItem("pr_dev_uid");
     if (!devId) {
       devId = "dev_" + Math.random().toString(36).slice(2, 10);
-      localStorage.setItem("pr_dev_uid", devId);
+      sessionStorage.setItem("pr_dev_uid", devId);
     }
     return devId;
   }
@@ -249,10 +295,15 @@
       if (error) {
         submitBtn.disabled = false;
         if (error.message && error.message.includes("already_answered")) {
+          // 既に回答済み(＝サーバーに記録済みの値がある)ということなので、
+          // 今しがた入力した値 v ではなく、実際に記録されている回答を取得して使う。
+          // v をそのまま使うと「表示上の回答/誤差」がサーバー確定値とズレる。
+          const recorded = await fetchRecordedAnswer(state.currentQId);
+          const finalAnswer = recorded != null ? recorded : v;
           state.submittedQId = state.currentQId;
-          state.myAnswer = v;
+          state.myAnswer = finalAnswer;
           persistAnswer();
-          showSubmitted(v);
+          showSubmitted(finalAnswer);
           return;
         }
         console.error("[submit_answer]", error);
@@ -284,6 +335,34 @@
     try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
+  /* ----- サーバーに記録済みの回答を取得 -----
+     sessionStorage はLINEミニアプリを完全に閉じると消える場合があるため、
+     ローカルに記録が無くても「本当に未回答か」をここでDBに問い合わせて確認する。
+     一発勝負の担保(answers_log の主キー)は常にDB側にあるので、ここが正。 */
+  async function fetchRecordedAnswer(qid) {
+    const { data } = await sb
+      .from("answers_log")
+      .select("user_answer")
+      .eq("line_user_id", state.lineUserId)
+      .eq("question_id", qid)
+      .maybeSingle();
+    return data && data.user_answer != null ? data.user_answer : null;
+  }
+
+  /* ----------------------- 本番問題の総数 (起動時に1回取得) ----------------------- */
+  async function loadQuestionMeta() {
+    const { count, error } = await sb
+      .from("questions")
+      .select("question_id", { count: "exact", head: true })
+      .not("display_order", "is", null)
+      .neq("display_order", 0);
+    if (error) {
+      console.warn("[questions] count error", error);
+      return;
+    }
+    state.totalQuestions = count ?? 0;
+  }
+
   /* ----------------------- 出題切り替え ----------------------- */
   async function loadCurrentQuestion() {
     if (!state.currentDisplayOrder && state.currentDisplayOrder !== 0) {
@@ -301,8 +380,6 @@
     }
     state.currentQuestion = data;
     $("#theme-q-text").textContent = data.text;
-    const label = data.display_order === 0 ? "練習問題" : `第${data.display_order}問`;
-    $("#theme-q-label").textContent = label;
   }
 
   /* ----------------------- ステータス反映 ----------------------- */
@@ -332,6 +409,7 @@
     }
     if (gs.status === "theme") {
       await loadCurrentQuestion();
+      updateStatusBar();
       // ---- 前問/練習問題の演出残りを完全に解消し、本来の残数へ確実にリセット ----
       // refreshUser() で state.totalRoses は既に DB の確定値へ同期済み
       // (練習問題は DB 不変=本来値。本番初問なら 100)。
@@ -345,11 +423,19 @@
       // Realtime イベント順に左右されない安定した没収前残数になる (項目6)。
       state.rosesBeforeReveal = state.totalRoses;
       // 復元: 回答済みなら submitted 画面
+      // sessionStorage → (無ければ)answers_log の順で確認する。LINEミニアプリを
+      // 完全に閉じるとsessionStorageが消えることがあり、それだけで「未回答」と
+      // 誤判定してスライダー画面に戻ってしまうのを防ぐため。
       const saved = restoreAnswer(state.currentQId);
-      if (saved) {
-        state.submittedQId = saved.q;
-        state.myAnswer = saved.v;
-        showSubmitted(saved.v);
+      let recoveredAnswer = saved ? saved.v : null;
+      if (recoveredAnswer == null) {
+        recoveredAnswer = await fetchRecordedAnswer(state.currentQId);
+      }
+      if (recoveredAnswer != null) {
+        state.submittedQId = state.currentQId;
+        state.myAnswer = recoveredAnswer;
+        persistAnswer();
+        showSubmitted(recoveredAnswer);
       } else {
         // スライダーをリセット
         const slider = $("#theme-slider");
@@ -362,6 +448,7 @@
     }
     if (gs.status === "answer") {
       await loadCurrentQuestion();
+      updateStatusBar();
       runAnswerSequence();
       return;
     }
@@ -575,13 +662,7 @@
       if (saved) myAns = saved.v;
     }
     if (myAns == null) {
-      const { data } = await sb
-        .from("answers_log")
-        .select("user_answer")
-        .eq("line_user_id", state.lineUserId)
-        .eq("question_id", state.currentQId)
-        .maybeSingle();
-      if (data && data.user_answer != null) myAns = data.user_answer;
+      myAns = await fetchRecordedAnswer(state.currentQId);
     }
 
     const correct = state.revealedCorrect;
@@ -666,22 +747,24 @@
   async function renderFinalResult() {
     const { data: users, error } = await sb
       .from("users")
-      .select("line_user_id, pair_name, total_roses")
-      .order("total_roses", { ascending: false });
+      .select("line_user_id, pair_name, total_roses");
     if (error) {
       console.error("[result]", error);
       toast("結果取得に失敗しました");
       return;
     }
-    // 残数を正規化 (NaN/負値/範囲外を 0〜100 の整数へ) してから判定・整列。
-    // これにより「0本(脱落)」を確実に除外し、不正値で生き残ったと誤認されるのを防ぐ。
-    const normalized = users.map((u) => ({ ...u, roses: clampRoses(u.total_roses) }));
-    const clearedSorted = normalized
-      .filter((u) => u.roses > 0)
-      .sort((a, b) => b.roses - a.roses);
+    // 残数を正規化 (NaN/負値/範囲外を 0〜100 の整数へ) したうえで、
+    // 全ペア(脱落含む)の順位を算出。0本(脱落)はクリア組の一覧から除外し、
+    // 別セクションで表示する (renderFinalResult 末尾)。
+    const ranked = computeRanking(users);
+    const clearedSorted = ranked.filter((u) => u.roses > 0);
+    // 脱落組には順位が無く一覧が探しにくいため、自分の行があれば必ず先頭に出す。
+    const eliminated = ranked
+      .filter((u) => u.roses === 0)
+      .sort((a, b) => (a.line_user_id === state.lineUserId ? -1 : 0) - (b.line_user_id === state.lineUserId ? -1 : 0));
 
-    const me = normalized.find((u) => u.line_user_id === state.lineUserId);
-    const myRank = clearedSorted.findIndex((u) => u.line_user_id === state.lineUserId);
+    const me = ranked.find((u) => u.line_user_id === state.lineUserId);
+    const myRank = me ? me.rank : null;
 
     const myRoses = me ? me.roses : 0;
 
@@ -689,7 +772,7 @@
     if (myRoses > 0) {
       summary.innerHTML = `
         <div class="lbl">あなたのペアは</div>
-        <div class="rank-num">${myRank + 1}<span class="pos">位</span></div>
+        <div class="rank-num">${myRank}<span class="pos">位</span></div>
         <div class="rose-num">バラ${myRoses}本</div>
       `;
     } else {
@@ -719,18 +802,40 @@
     if (clearedSorted.length === 0) {
       listEl.innerHTML = `<div class="empty">残念ながら、達成者はいませんでした…</div>`;
     } else {
-      listEl.innerHTML = clearedSorted.map((u, idx) => {
-        const pos = idx + 1;
+      listEl.innerHTML = clearedSorted.map((u) => {
         const isMe = u.line_user_id === state.lineUserId;
-        const goldClass = pos === 1 ? "gold" : "";
+        const goldClass = u.rank === 1 ? "gold" : "";
         const escapedName = escapeHtml(u.pair_name);
         return `
           <div class="rank-item${isMe ? " me" : ""}">
             <div class="left">
-              <span class="rank ${goldClass}">${pos}<span class="pos">位</span></span>
+              <span class="rank ${goldClass}">${u.rank}<span class="pos">位</span></span>
               <span class="pair-name">${escapedName}</span>
+              ${isMe ? '<span class="you-tag">あなた</span>' : ""}
             </div>
             <div class="roses"><span class="lbl">バラ</span>${u.roses}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    const eliminatedLabelEl = $("#eliminated-label");
+    const eliminatedListEl = $("#eliminated-list");
+    if (eliminated.length === 0) {
+      eliminatedLabelEl.classList.add("hidden");
+      eliminatedListEl.innerHTML = "";
+    } else {
+      eliminatedLabelEl.classList.remove("hidden");
+      eliminatedListEl.innerHTML = eliminated.map((u) => {
+        const isMe = u.line_user_id === state.lineUserId;
+        const escapedName = escapeHtml(u.pair_name);
+        return `
+          <div class="rank-item eliminated${isMe ? " me" : ""}">
+            <div class="left">
+              <span class="pair-name">${escapedName}</span>
+              ${isMe ? '<span class="you-tag">あなた</span>' : ""}
+            </div>
+            <div class="roses"><span class="lbl">バラ</span>0</div>
           </div>
         `;
       }).join("");
@@ -809,6 +914,7 @@
       state.totalRoses = 100;
     }
 
+    await loadQuestionMeta();
     await loadGameStatus();
     subscribeRealtime();
     await reflectGameStatus();

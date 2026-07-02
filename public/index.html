@@ -45,7 +45,10 @@
     <!-- ===== Screen: THEME (出題中) ===== -->
     <section id="screen-theme" class="screen hidden">
       <div class="roses-badge">バラ<span id="theme-roses">100</span></div>
-      <span class="q-label" id="theme-q-label">第1問</span>
+      <div class="status-bar">
+        <span class="status-pair"></span>
+        <span class="status-progress"></span>
+      </div>
       <div class="q-text-card" id="theme-q-text">―</div>
       <div class="q-block">
         <div class="answer-value">
@@ -59,6 +62,10 @@
 
     <!-- ===== Screen: SUBMITTED (回答済み→正解待ち) ===== -->
     <section id="screen-submitted" class="screen hidden">
+      <div class="status-bar">
+        <span class="status-pair"></span>
+        <span class="status-progress"></span>
+      </div>
       <div class="card submitted-card">
         <div class="heading">回答完了！</div>
         <div class="sent"><span id="submitted-value">42</span>%で送信しました！</div>
@@ -69,6 +76,10 @@
 
     <!-- ===== Screen: ANSWER (正解発表+演出) ===== -->
     <section id="screen-answer" class="screen hidden">
+      <div class="status-bar">
+        <span class="status-pair"></span>
+        <span class="status-progress"></span>
+      </div>
       <div class="reveal-heading">正解は…</div>
       <div class="card reveal-card">
         <div class="correct"><span id="answer-correct">―</span><span class="pct">%</span></div>
@@ -103,8 +114,10 @@
         <img class="result-ojisan-img" id="result-ojisan-img" src="" alt="" />
         <figcaption class="bubble" id="result-ojisan-bubble"></figcaption>
       </figure>
-      <div class="ranking-section-label">ランキング（クリアしたペアのみ）</div>
+      <div class="ranking-section-label">ランキング</div>
       <div class="ranking-list" id="ranking-list"><!-- JS --></div>
+      <div class="ranking-section-label eliminated-label hidden" id="eliminated-label">脱落</div>
+      <div class="ranking-list eliminated-list" id="eliminated-list"><!-- JS --></div>
     </section>
 
   </main>

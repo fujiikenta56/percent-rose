@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+# public/js/config.js は機密情報(Supabase URL/anon key, LIFF_ID)を含むため
+# Git には追跡させず(.gitignore)、デプロイ時にリポジトリシークレットから
+# このワークフローが生成する。詳細は README.md 8-3 参照。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate config.js from repository secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          LIFF_ID: ${{ secrets.LIFF_ID }}
+        run: |
+          cat > public/js/config.js <<EOF
+          // このファイルは GitHub Actions がリポジトリシークレットから
+          // ビルド時に自動生成します（.github/workflows/deploy.yml）。
+          // ローカル開発では public/js/config.example.js をコピーして使ってください。
+          var isLocalhost =
+            location.hostname === "localhost" || location.hostname === "127.0.0.1";
+
+          window.APP_CONFIG = {
+            SUPABASE_URL: "$SUPABASE_URL",
+            SUPABASE_ANON_KEY: "$SUPABASE_ANON_KEY",
+            LIFF_ID: isLocalhost ? null : "$LIFF_ID",
+          };
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # リポジトリ全体をアップロードし、既存の /public/ を含むURL構造を維持する
+          # (LINE Developers Console に設定済みの LIFF Endpoint URL を変更せずに済むため)。
+          path: '.'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -48,7 +48,7 @@
 | 未回答だったペアは強制脱落（バラ0本） | `reveal_answer` 内 未回答者を `total_roses = 0` に |
 | バラは0本が下限（マイナスにはならない） | `GREATEST(0, ...)` ＋ テーブル制約 `total_roses BETWEEN 0 AND 100` |
 | 練習問題（1問目）はスコアに影響しない | `display_order = 0` の問題は減算・脱落をスキップ |
-| 勝利条件 = 最後に残ったバラの本数が多い順 | `final_result` でバラ残数の降順ランキング。0本のペアは「脱落」扱いで除外 |
+| 勝利条件 = 最後に残ったバラの本数が多い順 | `final_result` でバラ残数の降順ランキング。同数のペアは同順位（例：2組が2位→次は4位）。0本のペアは「脱落」扱いで、順位付きランキングとは別セクションに一覧表示 |
 
 演出面では、誤差ぶんのバラを奪っていく「お花没収おじさん」（`images/ojisan_take.png`）が登場し、残数に応じて花束画像（`rose_100/75/50/25/0.png`）が切り替わります。没収の瞬間にバラ粒子がおじさんに吸い込まれ、残数がカウントダウンするアニメーションが `app.js` に実装されています。
 
@@ -66,7 +66,7 @@
    ▼
 [answer] 最終問題のあと、運営が「最終結果へ」を押す
    ▼
-[final_result] ランキング発表（クリアしたペアのみ）
+[final_result] ランキング発表（クリア組を順位付きで表示 ＋ 脱落組を別セクションに一覧表示）
 ```
 
 ---
@@ -122,9 +122,11 @@ status text NOT NULL CHECK (status IN ('entry','theme','answer','final_result'))
 | `status` | 意味 | 参加者画面（`app.js` / `index.html`） | 運営画面（`admin.js` / `admin.html`） |
 | :--- | :--- | :--- | :--- |
 | `entry` | エントリー受付中 | `#screen-waiting`（未登録なら `#screen-entry`） | `#admin-view-entry`（「エントリー受付中です」＋エントリー数） |
-| `theme` | 出題中・回答受付 | `#screen-theme`（問題文＋スライダー）／回答済みなら `#screen-submitted` | `#admin-view-theme`（問題文＋回答済み数／総数） |
-| `answer` | 正解発表＋没収演出 | `#screen-answer`（正解→おじさん→没収アニメ → 完了後に下部固定フッターで待機案内） | `#admin-view-answer`（正解値＋「次の問題へ」/「最終結果へ」） |
-| `final_result` | 最終ランキング | `#screen-result`（自分の順位＋全体ランキング＋残数で分岐するおじさん演出） | `#admin-view-result`（全体ランキング） |
+| `theme` | 出題中・回答受付 | `#screen-theme`（ステータスバー＋問題文＋スライダー）／回答済みなら `#screen-submitted` | `#admin-view-theme`（問題文＋回答済み数／総数） |
+| `answer` | 正解発表＋没収演出 | `#screen-answer`（ステータスバー＋正解→おじさん→没収アニメ → 完了後に下部固定フッターで待機案内） | `#admin-view-answer`（正解値＋「次の問題へ」/「最終結果へ」） |
+| `final_result` | 最終ランキング | `#screen-result`（自分の順位＋クリア組ランキング＋脱落組一覧＋残数で分岐するおじさん演出） | `#admin-view-result`（クリア組ランキング＋脱落組一覧） |
+
+`#screen-theme` / `#screen-submitted` / `#screen-answer` の3画面共通で、上部に「ステータスバー」（`.status-bar`）を表示します（詳細は4-5節）。
 
 どちらの画面も「`status` を見て対応するセクションの `hidden` クラスを外す」という同じ描画モデルです。
 
@@ -241,7 +243,9 @@ EXCEPTION
 END;
 ```
 
-フロント（`app.js`）も `state.submittedQId` と `sessionStorage`（`pr_answer_<qid>`）で二重送信を抑止し、リロードしても回答済み画面を復元します。ただし最終的な担保はDBの主キー制約です。`already_answered` が返った場合も回答済み画面へ遷移します。
+フロント（`app.js`）も `state.submittedQId` と `sessionStorage`（`pr_answer_<qid>`）で二重送信を抑止し、リロードしても回答済み画面を復元します。ただし最終的な担保はDBの主キー制約です。`already_answered` が返った場合は、直前に入力した値ではなく `fetchRecordedAnswer()` で `answers_log` から実際に記録されている回答を取得し直して回答済み画面へ遷移します（表示上の回答/誤差がサーバー確定値とズレないようにするため）。
+
+**LINEミニアプリを閉じた場合の挙動**：本人確認は `liff.getProfile().userId` によるためLINEアプリを閉じて開き直しても同じペアとして復帰し、送信済みの回答もDBの主キー制約により失われたり二重になったりしません。ただし「回答済みかどうか」の画面復元は `sessionStorage` を先に見るため、LINEアプリが完全終了して `sessionStorage` が消えた状態で同じ問題がまだ受付中のうちに開き直すと、`reflectGameStatus()` の `theme` 分岐が `sessionStorage` に無ければ `fetchRecordedAnswer()` で `answers_log` を直接確認し、記録済みの回答があれば `#screen-submitted` へ復元します（未回答なら通常通りスライダー画面）。正解発表画面（`runAnswerSequence()`）も同様に `answers_log` を直接参照するフォールバックを持つため、いずれの画面でも表示される回答・誤差・残数は常にDBの確定値と一致します。
 
 ### 4-3. バラ減算：`reveal_answer()`（`02_functions.sql`）
 
@@ -293,8 +297,21 @@ END IF;
 | `show_final_result()` | 「最終結果へ」 | `status='final_result'` |
 | `reset_game()` | 「リセット（初期化）」 | `answers_log` → `users` を全削除し `status='entry'` へ。エントリー情報を完全初期化 |
 
-最終ランキング（`app.js` の `renderFinalResult()` / `admin.js` の `renderRanking()`）は、`total_roses` を 0〜100 に正規化したうえで0本（脱落）を除外し、降順に並べます。0本だった自分には「残念脱落…💐」が表示されます。
+最終ランキング（`app.js` の `renderFinalResult()` / `admin.js` の `renderRanking()`）は、両者共通の `computeRanking()` で算出します。`total_roses` を 0〜100 に正規化し降順ソートしたうえで、同数のペアには同じ順位を割り当てます（例：2組が2位のとき、その次は3位ではなく4位）。0本（脱落）のペアも `computeRanking()` の対象には含めつつ、表示時は2グループに分けます。
+
+- **クリア組**（`roses > 0`）：順位（同順位対応・1位はゴールド表示）＋ペア名＋残数を一覧表示。
+- **脱落組**（`roses === 0`）：順位を付けず、ペア名のみを一覧表示。参加者画面では、この一覧の中に自分のペアが含まれる場合は必ず先頭に来るようソートし（他の脱落ペアの並び順は維持）、探しやすくしています。
+
+参加者画面ではさらに、どちらのグループでも自分のペアの行に `.rank-item.me`（赤枠）と「あなた」タグを付けて視覚的に見つけやすくしています（運営画面には「自分」の概念が無いため付与しません）。0本だった自分には「残念脱落…💐」が表示されます。
 さらに参加者の最終結果画面では、自分のバラ残数に応じておじさんの画像とセリフが分岐します（1本以上＝`ojisan_clear.png`＋「がんばったねwwwwwww」／0本＝`ojisan_fail.png`＋「かわいそう、、」）。セリフは正解発表画面の吹き出し（`.bubble`）と共通スタイルで表示します。
+
+### 4-5. 出題中のステータス表示：ステータスバー（`app.js`）
+
+`#screen-theme` / `#screen-submitted` / `#screen-answer` の3画面には、共通クラス（`.status-pair` / `.status-progress`）を使ったステータスバーを設置しており、`updateStatusBar()` が `document.querySelectorAll` で3画面分をまとめて更新します（現在どの画面が表示中でも同じ内容になる）。
+
+- **ペア名**：「PAIR」ラベル（装飾用の小さな見出し）＋ペア名を表示。進捗バッジとは異なる見た目にして視覚的に区別しています。
+- **進捗**：本番問題の総数（`display_order` が `NULL` でも `0`（練習）でもない `questions` の件数、起動時に `loadQuestionMeta()` で1回だけ取得）をもとに「第N問／全M問（残りM-N問）」を表示。練習問題（`display_order = 0`）のときは「練習問題」とだけ表示し、母数には含めません。
+- **現在順位は出題中には表示しません**（最終結果画面でのみ意味を持つ情報のため）。
 
 ---
 
@@ -398,7 +415,7 @@ percent-rose/
 │   │   ├── ojisan_fail.png     #     脱落（バラ0本）時の最終結果用おじさん（残念顔）
 │   │   └── rose_0/25/50/75/100.png  # 残数に応じて切り替わる花束画像
 │   └── js/
-│       ├── config.js           # 環境設定（Supabaseキー / LIFF_ID）。要デプロイ・gitignore非対象
+│       ├── config.js           # 環境設定（Supabaseキー / LIFF_ID）。gitignore対象・手動コミット禁止（7章参照）
 │       ├── config.example.js   #   config.js の見本（これをコピーして作成）
 │       ├── supabase-client.js  #   window.sb（Supabaseクライアント）を生成する共通処理
 │       ├── app.js              #   参加者ロジック（LIFF初期化・回答・没収演出・Realtime）
@@ -411,6 +428,10 @@ percent-rose/
 │
 ├── docs/
 │   └── design_images/          #   画面デザインの参照画像（開発用・配信対象外）
+│
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          #   GitHub Actions: config.js をシークレットから生成しPagesへデプロイ（8-3参照）
 │
 ├── .gitignore
 └── README.md                   #   このファイル（マスター仕様書）
@@ -441,7 +462,9 @@ percent-rose/
 
 ## 7. 環境設定（`config.js` の仕様）
 
-`public/js/config.js` がフロントの唯一の設定ファイルです。`config.example.js` をコピーして作成します。
+`public/js/config.js` がフロントの唯一の設定ファイルです。**このファイルは Git 追跡対象外（`.gitignore`）です。** 中身には Supabase の接続情報が生の値で入るため、公開リポジトリのコミット履歴に残さない方針にしています（本番用は下記8-3のとおり GitHub Actions がデプロイ時に自動生成します）。
+
+ローカル開発では `config.example.js` をコピーして作成します。
 
 ```js
 // public/js/config.js
@@ -463,7 +486,7 @@ window.APP_CONFIG = {
 
 | 環境 | 判定条件 | `LIFF_ID` | 本人識別（`app.js` の `initLineUser()`） |
 | :--- | :--- | :--- | :--- |
-| ローカル | `localhost` / `127.0.0.1` | `null` | devモード：LIFFを使わず `dev_xxxxxxxx` の擬似IDを `localStorage`（キー `pr_dev_uid`）に保存・再利用 |
+| ローカル | `localhost` / `127.0.0.1` | `null` | devモード：LIFFを使わず `dev_xxxxxxxx` の擬似IDを `sessionStorage`（キー `pr_dev_uid`）に保存・再利用（タブ/ウィンドウ単位でスコープ） |
 | 本番 | 上記以外（GitHub Pages 等） | LIFF ID をセット | `liff.init()` → 未ログインなら `liff.login()` → `liff.getProfile()` で実際の LINE `userId` を取得 |
 
 ```js
@@ -475,21 +498,23 @@ async function initLineUser() {
     const profile = await liff.getProfile();
     return profile.userId;
   }
-  // ローカル：ブラウザごとに固定の擬似ID
-  let devId = localStorage.getItem("pr_dev_uid");
+  // ローカル：タブ/ウィンドウごとに固定の擬似ID
+  let devId = sessionStorage.getItem("pr_dev_uid");
   if (!devId) { devId = "dev_" + Math.random().toString(36).slice(2, 10);
-                localStorage.setItem("pr_dev_uid", devId); }
+                sessionStorage.setItem("pr_dev_uid", devId); }
   return devId;
 }
 ```
 
-注意：`config.js` は必ずデプロイすること。GitHub Pages はビルド時に値を注入できない静的ホスティングのため、`config.js` を `.gitignore` で追跡対象から外すと本番で 404 → `window.APP_CONFIG` が未定義 → `window.sb` が生成されず画面が真っ白になります。（実際に過去、`config.js` が gitignore 対象で管理画面が真っ白になる不具合が発生しました。現在は追跡対象に含めています。）
+注意：本番の `config.js` は GitHub Actions のデプロイワークフローがビルド時に自動生成します（8-3参照）。手動で作った `config.js` をコミットしないでください。過去に「`config.js` を `.gitignore` に入れたままデプロイし、本番で404→`window.APP_CONFIG`未定義→`window.sb`が生成されず画面が真っ白になる」不具合が起きたことがありますが、これは静的ホスティングにビルド時注入の仕組みが無かった（＝config.jsを手動コミットする以外に配信経路が無かった）ことが原因でした。現在は GitHub Actions がビルド時に生成する経路があるため、コミットせずに済みます。
 
 `config.js` に書いてよいのはクライアントへ公開される前提の値だけです。
 
 - OK: `SUPABASE_ANON_KEY`（anon 公開鍵。保護は Supabase 側の RLS で行う前提）
 - OK: `LIFF_ID`（LIFFアプリの公開ID）
 - NG: `service_role` などのサーバー秘密鍵は絶対に置かない（全クライアントに丸見えになります）
+
+とはいえ `SUPABASE_ANON_KEY` はクライアントに公開される前提の値であっても、公開リポジトリのファイル・コミット履歴にそのまま残すのは避けるべきという判断で Git 追跡対象から外しています（GitHubの自動シークレットスキャン等に拾われやすい・スクレイピング対象になりやすいため）。
 
 ---
 
@@ -520,19 +545,34 @@ npx serve public
 - ブラウザで `http://localhost:3000`（serve が表示するポート）を開く。
 - `localhost` 判定で devモードになり、LINE アプリ無しで参加者画面をテストできます。
 - 運営画面は `http://localhost:3000/admin.html`。
-- 複数ペアの模擬：別ブラウザ／シークレットウィンドウで開くと、それぞれ別の `dev_` 擬似ID（`localStorage` の `pr_dev_uid`）が割り当てられます。擬似IDをリセットしたいときは、その `localStorage` を消去します。
+- 複数ペアの模擬：擬似IDは `sessionStorage`（キー `pr_dev_uid`）にタブ/ウィンドウ単位で保存されるため、別タブ／別ウィンドウを開くだけでそれぞれ別の `dev_` 擬似IDが割り当てられ、別ペアとして扱われます（別ブラウザやシークレットウィンドウは不要）。同じタブのリロードでは同じペアのまま保持されます。擬似IDをリセットしたいときは、そのタブを閉じる（もしくは `sessionStorage` を消去する）だけで済みます。
 
 進行確認の流れ：運営画面で「問題を表示する」→ 参加者画面（別タブ）でスライダー回答 → 運営画面で「正解を表示する」→ 没収演出を確認、を繰り返します。やり直しは「リセット（初期化）」。
 
-### 8-3. 本番反映（GitHub Pages 自動デプロイ）
+### 8-3. 本番反映（GitHub Actions 経由の GitHub Pages 自動デプロイ）
 
-`main` ブランチへ push すると、GitHub Pages が `public/` 配下を自動配信します。
+`config.js` を Git にコミットせずに済ませるため、デプロイは GitHub Actions（`.github/workflows/deploy.yml`）が担当します。`main` ブランチへ push すると、ワークフローが以下を自動で行います。
+
+1. リポジトリをチェックアウト
+2. リポジトリシークレット（`SUPABASE_URL` / `SUPABASE_ANON_KEY` / `LIFF_ID`）から `public/js/config.js` をビルド時に生成
+3. リポジトリ全体を Pages 用アーティファクトとしてアップロード・公開
 
 ```bash
 git add .
 git commit -m "変更内容"
-git push            # → 数十秒〜数分で本番へ反映
+git push            # → Actions が走り、数十秒〜数分で本番へ反映
 ```
+
+**初回セットアップ（1回だけ）**
+
+1. リポジトリの Settings → Secrets and variables → Actions で、以下のリポジトリシークレットを登録する。
+   | シークレット名 | 値 |
+   | :--- | :--- |
+   | `SUPABASE_URL` | Supabase プロジェクト URL |
+   | `SUPABASE_ANON_KEY` | Supabase anon 公開鍵 |
+   | `LIFF_ID` | LINE Developers Console で発行した LIFF ID |
+2. リポジトリの Settings → Pages で、Source を「Deploy from a branch」ではなく **「GitHub Actions」** に変更する。
+3. `main` へ push（または Actions タブから `Deploy to GitHub Pages` ワークフローを手動実行）すると初回デプロイが走る。
 
 公開URL（例：本リポジトリ）
 
@@ -541,7 +581,7 @@ git push            # → 数十秒〜数分で本番へ反映
 | 参加者 | `https://<user>.github.io/percent-rose/public/index.html` |
 | 運営 | `https://<user>.github.io/percent-rose/public/admin.html` |
 
-パスに `/public/` が入るのは、GitHub Pages がリポジトリのルートを配信し、その配下の `public/` をそのまま公開しているためです。各JSは相対パス（`./js/...`）で読み込むので、サブディレクトリ配信でもパスは崩れません。
+パスに `/public/` が入るのは、デプロイ用アーティファクトがリポジトリ全体（ルート）をそのまま含んでおり、その配下の `public/` を公開しているためです。既存の LIFF Endpoint URL 設定（8-4）を変更せずに済むよう、URL構造は「ブランチから直接配信」していた頃と同じになるようにしています。各JSは相対パス（`./js/...`）で読み込むので、サブディレクトリ配信でもパスは崩れません。
 
 ### 8-4. LINE Developers 側の設定・運用
 
@@ -552,10 +592,7 @@ git push            # → 数十秒〜数分で本番へ反映
    ```
    https://<user>.github.io/percent-rose/public/index.html
    ```
-3. 発行された LIFF ID を `public/js/config.js` の `LIFF_ID`（本番側）に記入する。
-   ```js
-   LIFF_ID: isLocalhost ? null : "2010233781-XXXXXXXX",
-   ```
+3. 発行された LIFF ID を、リポジトリシークレット `LIFF_ID`（Settings → Secrets and variables → Actions）に登録する。手動で `public/js/config.js` を編集する必要はない（8-3のワークフローがビルド時に注入する）。
 4. Scope に profile（`liff.getProfile()` で `userId` を取得するため）が含まれていることを確認する。
 5. 参加者へは LIFF URL（`https://liff.line.me/<LIFF_ID>`）を共有する。LINEアプリ内ブラウザで開くと `app.js` が `liff.init()` → ログイン → `userId` 取得まで自動で行う。
 
