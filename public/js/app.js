@@ -95,7 +95,7 @@
   function updateStatusBar() {
     document.querySelectorAll(".status-pair").forEach((el) => {
       el.innerHTML = state.pairName
-        ? `<span class="status-pair-label">PAIR</span><span class="status-pair-name">${escapeHtml(state.pairName)}</span>`
+        ? `<span class="status-pair-label">PAIR NAME</span><span class="status-pair-name">${escapeHtml(state.pairName)}</span>`
         : "";
     });
 

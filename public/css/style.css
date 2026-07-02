@@ -184,25 +184,26 @@ body {
 }
 
 /* ---- 進行ステータスバー (出題中/回答済み/正解発表 共通) ----
-   ペア名は「誰の画面か」を示すただのラベルなので、進捗ピルと同じ枠で
-   囲わず地の文として表示する。進捗(第N問/残りN問)だけをピル状のバッジにする。 */
-.status-bar {
+   ペア名は左上、バラ残数バッジ(.roses-badge)は右上、で対称になるよう配置する。
+   進捗(第N問/残りN問)はその下に中央寄せのピルバッジとして表示する。 */
+.status-pair {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  max-width: 55%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 16px;
+  align-items: flex-start;
+  gap: 2px;
 }
-/* screen-theme のみ右上に絶対配置の .roses-badge が同居するため、重ならないよう下げる */
-#screen-theme .status-bar { margin-top: 44px; }
+/* 左上絶対配置のペア名バッジ分、後続コンテンツと重ならないよう下げる */
+.status-bar {
+  display: flex;
+  justify-content: center;
+  margin: 52px 0 16px;
+}
 /* q-label 廃止に伴い、質問カードとの間隔をここで確保する */
 #screen-theme .status-bar { margin-bottom: 24px; }
-.status-pair {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-}
 .status-pair-label {
   font-family: "Cinzel", serif;
   font-weight: 700;
@@ -211,10 +212,11 @@ body {
   color: var(--sub);
 }
 .status-pair-name {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--primary);
   letter-spacing: 0.02em;
+  line-height: 1.2;
   position: relative;
   padding-bottom: 2px;
 }
