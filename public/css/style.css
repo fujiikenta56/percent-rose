@@ -204,6 +204,8 @@ body {
 }
 /* q-label 廃止に伴い、質問カードとの間隔をここで確保する */
 #screen-theme .status-bar { margin-bottom: 24px; }
+/* 正解発表はペア名バッジを表示しないため、そのぶんの予備マージンは詰める */
+#screen-answer .status-bar { margin-top: 0; }
 .status-pair-label {
   font-family: "Cinzel", serif;
   font-weight: 700;

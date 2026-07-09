@@ -90,8 +90,9 @@
 
   /* ----- ステータスバー (ペア名/問題の進捗) の反映 -----
      現在順位はランキングが動く最終結果画面でのみ意味を持つため、出題中は表示しない。
-     screen-theme / screen-submitted / screen-answer に同じクラスで
-     配置しているため、querySelectorAll で一括更新する。 */
+     ペア名バッジ(.status-pair)は正解発表(screen-answer)には置かず、
+     screen-theme / screen-submitted にのみ同じクラスで配置しているため、
+     querySelectorAll で一括更新する。 */
   function updateStatusBar() {
     document.querySelectorAll(".status-pair").forEach((el) => {
       el.innerHTML = state.pairName
